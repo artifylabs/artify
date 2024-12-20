@@ -1,0 +1,2 @@
+#include? "Pods/Target Support Files/Pods-ArtifyMac/Pods-ArtifyMac.debug.xcconfig"
+#include "ephemeral/Flutter-Generated.xcconfig"

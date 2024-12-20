@@ -1,0 +1,2 @@
+#include? "Pods/Target Support Files/Pods-Artify/Pods-Artify.debug.xcconfig"
+#include "Generated.xcconfig"
