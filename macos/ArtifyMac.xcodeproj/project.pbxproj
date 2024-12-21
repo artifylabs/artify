@@ -21,8 +21,6 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
-		2E97AF4B2D16BE24007EF02D /* AppInfo-Pro.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 2E97AF4A2D16BE24007EF02D /* AppInfo-Pro.xcconfig */; };
-		2E97AF5F2D16C698007EF02D /* Info-Pro.plist in Resources */ = {isa = PBXBuildFile; fileRef = 2E97AF5E2D16C698007EF02D /* Info-Pro.plist */; };
 		331C80D8294CF71000263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C80D7294CF71000263BE5 /* RunnerTests.swift */; };
 		335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 335BBD1A22A9A15E00E9071D /* GeneratedPluginRegistrant.swift */; };
 		33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC10F02044A3C60003C045 /* AppDelegate.swift */; };
@@ -336,8 +334,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				33CC10F32044A3C60003C045 /* Assets.xcassets in Resources */,
-				2E97AF4B2D16BE24007EF02D /* AppInfo-Pro.xcconfig in Resources */,
-				2E97AF5F2D16C698007EF02D /* Info-Pro.plist in Resources */,
 				33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -493,7 +489,7 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
-		2E97AF4C2D16BF09007EF02D /* Debug-Pro */ = {
+		2E97AF4C2D16BF09007EF02D /* Debug-pro */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
 			buildSettings = {
@@ -540,16 +536,16 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
-			name = "Debug-Pro";
+			name = "Debug-pro";
 		};
-		2E97AF4D2D16BF09007EF02D /* Debug-Pro */ = {
+		2E97AF4D2D16BF09007EF02D /* Debug-pro */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2E97AF4A2D16BE24007EF02D /* AppInfo-Pro.xcconfig */;
 			buildSettings = {
@@ -573,9 +569,9 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 			};
-			name = "Debug-Pro";
+			name = "Debug-pro";
 		};
-		2E97AF4E2D16BF09007EF02D /* Debug-Pro */ = {
+		2E97AF4E2D16BF09007EF02D /* Debug-pro */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 9D86BBCF2344987AE1707064 /* Pods-ArtifyMacTests.debug-pro.xcconfig */;
 			buildSettings = {
@@ -588,17 +584,17 @@
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Artify.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Artify";
 			};
-			name = "Debug-Pro";
+			name = "Debug-pro";
 		};
-		2E97AF4F2D16BF09007EF02D /* Debug-Pro */ = {
+		2E97AF4F2D16BF09007EF02D /* Debug-pro */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Manual;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
-			name = "Debug-Pro";
+			name = "Debug-pro";
 		};
-		2E97AF502D16BF13007EF02D /* Release-Pro */ = {
+		2E97AF502D16BF13007EF02D /* Release-pro */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
@@ -639,15 +635,15 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 			};
-			name = "Release-Pro";
+			name = "Release-pro";
 		};
-		2E97AF512D16BF13007EF02D /* Release-Pro */ = {
+		2E97AF512D16BF13007EF02D /* Release-pro */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2E97AF4A2D16BE24007EF02D /* AppInfo-Pro.xcconfig */;
 			buildSettings = {
@@ -670,9 +666,9 @@
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
 			};
-			name = "Release-Pro";
+			name = "Release-pro";
 		};
-		2E97AF522D16BF13007EF02D /* Release-Pro */ = {
+		2E97AF522D16BF13007EF02D /* Release-pro */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E33401FD9327806877D48A8B /* Pods-ArtifyMacTests.release-pro.xcconfig */;
 			buildSettings = {
@@ -685,17 +681,17 @@
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Artify.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Artify";
 			};
-			name = "Release-Pro";
+			name = "Release-pro";
 		};
-		2E97AF532D16BF13007EF02D /* Release-Pro */ = {
+		2E97AF532D16BF13007EF02D /* Release-pro */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
-			name = "Release-Pro";
+			name = "Release-pro";
 		};
-		2E97AF542D16BF1C007EF02D /* Profile-Pro */ = {
+		2E97AF542D16BF1C007EF02D /* Profile-pro */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
@@ -736,15 +732,15 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 			};
-			name = "Profile-Pro";
+			name = "Profile-pro";
 		};
-		2E97AF552D16BF1C007EF02D /* Profile-Pro */ = {
+		2E97AF552D16BF1C007EF02D /* Profile-pro */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2E97AF4A2D16BE24007EF02D /* AppInfo-Pro.xcconfig */;
 			buildSettings = {
@@ -767,9 +763,9 @@
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
 			};
-			name = "Profile-Pro";
+			name = "Profile-pro";
 		};
-		2E97AF562D16BF1C007EF02D /* Profile-Pro */ = {
+		2E97AF562D16BF1C007EF02D /* Profile-pro */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = CD837B1C99477CD000BEE7D0 /* Pods-ArtifyMacTests.profile-pro.xcconfig */;
 			buildSettings = {
@@ -782,15 +778,15 @@
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Artify.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Artify";
 			};
-			name = "Profile-Pro";
+			name = "Profile-pro";
 		};
-		2E97AF572D16BF1C007EF02D /* Profile-Pro */ = {
+		2E97AF572D16BF1C007EF02D /* Profile-pro */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Manual;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
-			name = "Profile-Pro";
+			name = "Profile-pro";
 		};
 		331C80DB294CF71000263BE5 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -878,7 +874,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -966,7 +962,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				INFOPLIST_KEY_CFBundleDisplayName = "";
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -1016,7 +1013,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -1098,11 +1095,11 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				331C80DB294CF71000263BE5 /* Debug */,
-				2E97AF4E2D16BF09007EF02D /* Debug-Pro */,
+				2E97AF4E2D16BF09007EF02D /* Debug-pro */,
 				331C80DC294CF71000263BE5 /* Release */,
-				2E97AF522D16BF13007EF02D /* Release-Pro */,
+				2E97AF522D16BF13007EF02D /* Release-pro */,
 				331C80DD294CF71000263BE5 /* Profile */,
-				2E97AF562D16BF1C007EF02D /* Profile-Pro */,
+				2E97AF562D16BF1C007EF02D /* Profile-pro */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -1111,11 +1108,11 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				33CC10F92044A3C60003C045 /* Debug */,
-				2E97AF4C2D16BF09007EF02D /* Debug-Pro */,
+				2E97AF4C2D16BF09007EF02D /* Debug-pro */,
 				33CC10FA2044A3C60003C045 /* Release */,
-				2E97AF502D16BF13007EF02D /* Release-Pro */,
+				2E97AF502D16BF13007EF02D /* Release-pro */,
 				338D0CE9231458BD00FA5F75 /* Profile */,
-				2E97AF542D16BF1C007EF02D /* Profile-Pro */,
+				2E97AF542D16BF1C007EF02D /* Profile-pro */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -1124,11 +1121,11 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				33CC10FC2044A3C60003C045 /* Debug */,
-				2E97AF4D2D16BF09007EF02D /* Debug-Pro */,
+				2E97AF4D2D16BF09007EF02D /* Debug-pro */,
 				33CC10FD2044A3C60003C045 /* Release */,
-				2E97AF512D16BF13007EF02D /* Release-Pro */,
+				2E97AF512D16BF13007EF02D /* Release-pro */,
 				338D0CEA231458BD00FA5F75 /* Profile */,
-				2E97AF552D16BF1C007EF02D /* Profile-Pro */,
+				2E97AF552D16BF1C007EF02D /* Profile-pro */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -1137,11 +1134,11 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				33CC111C2044C6BA0003C045 /* Debug */,
-				2E97AF4F2D16BF09007EF02D /* Debug-Pro */,
+				2E97AF4F2D16BF09007EF02D /* Debug-pro */,
 				33CC111D2044C6BA0003C045 /* Release */,
-				2E97AF532D16BF13007EF02D /* Release-Pro */,
+				2E97AF532D16BF13007EF02D /* Release-pro */,
 				338D0CEB231458BD00FA5F75 /* Profile */,
-				2E97AF572D16BF1C007EF02D /* Profile-Pro */,
+				2E97AF572D16BF1C007EF02D /* Profile-pro */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

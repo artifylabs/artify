@@ -508,7 +508,7 @@
 			};
 			name = Profile;
 		};
-		2E97AF622D16CB25007EF02D /* Debug-Pro */ = {
+		2E97AF622D16CB25007EF02D /* Debug-pro */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -563,9 +563,9 @@
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
-			name = "Debug-Pro";
+			name = "Debug-pro";
 		};
-		2E97AF632D16CB25007EF02D /* Debug-Pro */ = {
+		2E97AF632D16CB25007EF02D /* Debug-pro */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
 			buildSettings = {
@@ -593,9 +593,9 @@
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
-			name = "Debug-Pro";
+			name = "Debug-pro";
 		};
-		2E97AF642D16CB25007EF02D /* Debug-Pro */ = {
+		2E97AF642D16CB25007EF02D /* Debug-pro */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 85DF67756B484737DF1B5A72 /* Pods-ArtifyTests.debug-pro.xcconfig */;
 			buildSettings = {
@@ -611,9 +611,9 @@
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Artify.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Artify";
 			};
-			name = "Debug-Pro";
+			name = "Debug-pro";
 		};
-		2E97AF652D16CB2D007EF02D /* Release-Pro */ = {
+		2E97AF652D16CB2D007EF02D /* Release-pro */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -665,9 +665,9 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
 			};
-			name = "Release-Pro";
+			name = "Release-pro";
 		};
-		2E97AF662D16CB2D007EF02D /* Release-Pro */ = {
+		2E97AF662D16CB2D007EF02D /* Release-pro */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
@@ -696,9 +696,9 @@
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
-			name = "Release-Pro";
+			name = "Release-pro";
 		};
-		2E97AF672D16CB2D007EF02D /* Release-Pro */ = {
+		2E97AF672D16CB2D007EF02D /* Release-pro */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7D88F96BDCCA39E1EE5BEE87 /* Pods-ArtifyTests.release-pro.xcconfig */;
 			buildSettings = {
@@ -712,9 +712,9 @@
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Artify.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Artify";
 			};
-			name = "Release-Pro";
+			name = "Release-pro";
 		};
-		2E97AF682D16CB36007EF02D /* Profile-Pro */ = {
+		2E97AF682D16CB36007EF02D /* Profile-pro */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -764,9 +764,9 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
 			};
-			name = "Profile-Pro";
+			name = "Profile-pro";
 		};
-		2E97AF692D16CB36007EF02D /* Profile-Pro */ = {
+		2E97AF692D16CB36007EF02D /* Profile-pro */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
 			buildSettings = {
@@ -795,9 +795,9 @@
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
-			name = "Profile-Pro";
+			name = "Profile-pro";
 		};
-		2E97AF6A2D16CB36007EF02D /* Profile-Pro */ = {
+		2E97AF6A2D16CB36007EF02D /* Profile-pro */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = B14943063346942597BD9232 /* Pods-ArtifyTests.profile-pro.xcconfig */;
 			buildSettings = {
@@ -811,7 +811,7 @@
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Artify.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Artify";
 			};
-			name = "Profile-Pro";
+			name = "Profile-pro";
 		};
 		331C8088294A63A400263BE5 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -1042,11 +1042,11 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				331C8088294A63A400263BE5 /* Debug */,
-				2E97AF642D16CB25007EF02D /* Debug-Pro */,
+				2E97AF642D16CB25007EF02D /* Debug-pro */,
 				331C8089294A63A400263BE5 /* Release */,
-				2E97AF672D16CB2D007EF02D /* Release-Pro */,
+				2E97AF672D16CB2D007EF02D /* Release-pro */,
 				331C808A294A63A400263BE5 /* Profile */,
-				2E97AF6A2D16CB36007EF02D /* Profile-Pro */,
+				2E97AF6A2D16CB36007EF02D /* Profile-pro */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -1055,11 +1055,11 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				97C147031CF9000F007C117D /* Debug */,
-				2E97AF622D16CB25007EF02D /* Debug-Pro */,
+				2E97AF622D16CB25007EF02D /* Debug-pro */,
 				97C147041CF9000F007C117D /* Release */,
-				2E97AF652D16CB2D007EF02D /* Release-Pro */,
+				2E97AF652D16CB2D007EF02D /* Release-pro */,
 				249021D3217E4FDB00AE95B9 /* Profile */,
-				2E97AF682D16CB36007EF02D /* Profile-Pro */,
+				2E97AF682D16CB36007EF02D /* Profile-pro */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -1068,11 +1068,11 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				97C147061CF9000F007C117D /* Debug */,
-				2E97AF632D16CB25007EF02D /* Debug-Pro */,
+				2E97AF632D16CB25007EF02D /* Debug-pro */,
 				97C147071CF9000F007C117D /* Release */,
-				2E97AF662D16CB2D007EF02D /* Release-Pro */,
+				2E97AF662D16CB2D007EF02D /* Release-pro */,
 				249021D4217E4FDB00AE95B9 /* Profile */,
-				2E97AF692D16CB36007EF02D /* Profile-Pro */,
+				2E97AF692D16CB36007EF02D /* Profile-pro */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
