@@ -46,3 +46,16 @@ app.*.map.json
 
 # Coverage test report
 coverage/
+
+/*.dmg
+/*.pkg
+/*.snap
+
+# local env files
+.env*.local
+.env
+
+# FVM Version Cache
+.fvm/
+
+/*.wxs
