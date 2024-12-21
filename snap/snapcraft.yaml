@@ -1,0 +1,69 @@
+name: artify
+version: 0.0.1.1
+summary: Ideas, Painting & Art.
+description: Ideas, Painting & Art.
+icon: snap/gui/artify.png
+title: Artify
+contact: support@artifylabs.org
+license: GPL-3.0-only
+source-code: https://github.com/artifylabs/artify
+issues: https://github.com/artifylabs/artify/issues
+website: https://www.artifylabs.org
+architectures:
+  - build-on: [amd64]
+  - build-on: [arm64]
+confinement: strict
+base: core22
+grade: stable
+slots:
+  dbus-artify: # adjust accordingly to your app name
+    interface: dbus
+    bus: session
+    name: com.kjxbyz.Artify # adjust accordingly to your app name and
+apps:
+  artify:
+    command: artify
+    extensions: [gnome] # gnome includes the libraries required by flutter
+    plugs:
+      - network
+      - home
+    slots:
+      - dbus-artify
+parts:
+  artify:
+    source: .
+    plugin: flutter
+    # flutter-target: lib/main.dart # The main entry-point file of the application
+    build-packages:
+      - curl
+      - libcurl4-openssl-dev
+      - git
+      - unzip
+      - xz-utils
+      - zip
+      - libglu1-mesa
+      - clang
+      - cmake
+      - ninja-build
+      - pkg-config
+      - libgtk-3-dev
+      - liblzma-dev
+      - libstdc++-12-dev
+    build-environment:
+      - FLUTTER_REPO: https://github.com/flutter/flutter.git
+      - FLUTTER_VERSION: 3.27.1
+      - FLUTTER_TARGET: lib/main_free.dart
+      - TARGET_PLATFORM: linux-x64
+    override-build: |
+      # https://github.com/canonical/snapcraft/blob/main/snapcraft/parts/plugins/flutter_plugin.py
+      ATY_FLUTTER_BUILD_DIR="$CRAFT_PART_BUILD/flutter-distro"
+      if [ -d "$ATY_FLUTTER_BUILD_DIR" ]; then
+        echo "$ATY_FLUTTER_BUILD_DIR"
+        rm -rf $ATY_FLUTTER_BUILD_DIR
+      fi
+      git clone --depth 1 -b $FLUTTER_VERSION $FLUTTER_REPO $ATY_FLUTTER_BUILD_DIR
+      flutter doctor -v
+      flutter precache --linux
+      flutter pub get
+      flutter build linux --release --dart-define-from-file=.env --target-platform $TARGET_PLATFORM --target $FLUTTER_TARGET
+      cp -r build/linux/*/release/bundle/* $CRAFT_PART_INSTALL/

@@ -1,0 +1,2648 @@
+name: Release
+on:
+  # Enable manual run
+  workflow_dispatch:
+    inputs:
+      env:
+        type: choice
+        description: "Which environment are you using?"
+        required: true
+        default: "staging"
+        options:
+          - staging
+          - production
+      latest:
+        type: boolean
+        description: "Whether to create the latest version? (default to false)"
+        default: false
+        required: false
+
+# Declare default permissions as readonly.
+permissions: read-all
+
+jobs:
+  create_release:
+    name: Create release
+    runs-on: ubuntu-22.04
+    outputs:
+      sha: ${{ steps.sha_step.outputs.sha }}
+      version: ${{ steps.version_step.outputs.version }}
+      version_short: ${{ steps.version_step.outputs.version_short }}
+      build_number: ${{ steps.version_step.outputs.build_number }}
+      release: ${{ steps.version_step.outputs.release }}
+      tag_name: ${{ steps.version_step.outputs.tag_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set sha
+        id: sha_step
+        run: |
+          SHA=$(git rev-parse HEAD)
+          echo "SHA: $SHA."
+
+          SHA_SHORT=$(git rev-parse --short=8 HEAD)
+          echo "SHA_SHORT: $SHA_SHORT."
+
+          echo "sha=$SHA" >> $GITHUB_OUTPUT
+          echo "sha_short=$SHA_SHORT" >> $GITHUB_OUTPUT
+
+      - name: Set version
+        id: version_step
+        run: |
+          VERSION=$(yq '.version' pubspec.yaml)
+          echo "VERSION: $VERSION."
+
+          VERSION_SHORT=$(echo "$VERSION" | sed -e "s/+.*//")
+          echo "VERSION_SHORT: $VERSION_SHORT."
+
+          BUILD_NUMBER=$(echo "$VERSION" | sed -e "s/.*+//")
+          echo "BUILD_NUMBER: $BUILD_NUMBER."
+
+          if [ "$ENV" == "staging" ]; then
+            TAG_NAME="$VERSION.pre"
+          elif [[ "$ENV" == "production" && "$IS_LATEST" == "false" ]]; then
+            TAG_NAME="$VERSION.rc"
+          else
+            TAG_NAME="$VERSION"
+          fi
+          echo "TAG_NAME: v$TAG_NAME."
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_short=$VERSION_SHORT" >> $GITHUB_OUTPUT
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "release=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "tag_name=v$TAG_NAME" >> $GITHUB_OUTPUT
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          IS_LATEST: ${{ github.event.inputs.latest }}
+
+      - name: Create a release
+        run: |
+          RELEASE_NOTES="Env: $ENV <br /> Branch: $BRANCH <br /> Commit: $SHA_SHORT"
+          gh release create "$TAG_NAME" --draft --latest=false --prerelease=false --target "$SHA" --title "$TAG_NAME" --notes "$RELEASE_NOTES"
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ steps.sha_step.outputs.sha }}
+          SHA_SHORT: ${{ steps.sha_step.outputs.sha_short }}
+          TAG_NAME: ${{ steps.version_step.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+  gen_shasum:
+    name: Gen Shasum
+    runs-on: ubuntu-22.04
+    needs:
+      - create_release
+      - apk_free
+      - apk_pro
+      - aab_free
+      - aab_pro
+      - ios_free
+      - ios_pro
+      - macos_dmg
+      - macos_pkg
+      - macos_appstore_free
+      - macos_appstore_pro
+      - macos_zip
+      - macos_tar
+      - linux_deb
+      - linux_deb_aarch64
+      - linux_rpm
+      - linux_rpm_aarch64
+      - linux_tar
+      - linux_tar_aarch64
+      - linux_snap
+      - linux_snap_aarch64
+      - windows_msi
+      - windows_msix_free
+      - windows_msix_pro
+      - windows_exe
+      - windows_zip
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install ts-shasum
+        run: npm install -g ts-shasum
+
+      - name: Publish a release
+        run: |
+          if [[ "$ENV" == "production" && "$IS_LATEST" == "true" ]]; then
+            gh release edit "$TAG_NAME" --latest --draft=false --tag "$TAG_NAME" --target "$SHA"
+          else
+            gh release edit "$TAG_NAME" --prerelease --draft=false --tag "$TAG_NAME" --target "$SHA"
+          fi
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          IS_LATEST: ${{ github.event.inputs.latest }}
+          SHA: ${{ needs.create_release.outputs.sha }}
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Download assets
+        uses: robinraju/release-downloader@v1
+        with:
+          tag: "${{ needs.create_release.outputs.tag_name }}"
+          fileName: '*'
+          tarBall: false
+          zipBall: false
+          out-file-path: 'aty-downloads'
+      
+      - name: Gen SHASUMS256.txt
+        run: shasum create "$GITHUB_WORKSPACE/SHASUMS256.txt" *
+        working-directory: ${{ github.workspace }}/aty-downloads
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./SHASUMS256.txt
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+  apk_free:
+    name: Create apk (free)
+    runs-on: ubuntu-22.04
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "17.x"
+          distribution: 'temurin'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          ENV_BASE64="$([[ "$ENV" == "staging" ]] && echo "$ENV_STG_BASE64" || echo "$ENV_PROD_BASE64")"
+          echo "$ENV_BASE64" | base64 --decode > .env
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64 }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64 }}
+
+      - name: Install Deps
+        run: flutter pub get
+
+      - name: Configure Keystore for Android
+        run: |
+          echo "$PLAY_STORE_UPLOAD_KEY" | base64 --decode > app/upload-keystore.jks
+          echo "storeFile=upload-keystore.jks" >> key.properties
+          echo "keyAlias=$KEYSTORE_KEY_ALIAS" >> key.properties
+          echo "keyPassword=$KEYSTORE_KEY_PASSWORD" >> key.properties
+          echo "storePassword=$KEYSTORE_STORE_PASSWORD" >> key.properties
+        env:
+          PLAY_STORE_UPLOAD_KEY: ${{ secrets.PLAY_STORE_UPLOAD_KEY }}
+          KEYSTORE_KEY_ALIAS: ${{ secrets.KEYSTORE_KEY_ALIAS }}
+          KEYSTORE_KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
+          KEYSTORE_STORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
+        working-directory: android
+
+      # Build the application.
+      - name: Build apk
+        run: |
+          FLAVOR="$([[ "$ENV" == "staging" ]] && echo "freeStaging" || echo "freeProduction")"
+          flutter build apk --dart-define-from-file=.env --no-tree-shake-icons --target lib/main_free.dart --flavor $FLAVOR
+        env:
+          ENV: ${{ github.event.inputs.env }}
+
+      # Package the build.
+      - name: Copy build for Android
+        run: |
+          ls -la
+          if [[ "$ENV" == "staging" ]]; then
+            cp app-freestaging-release.apk $GITHUB_WORKSPACE/Artify_$RELEASE-free.apk
+          else
+            cp app-freeproduction-release.apk $GITHUB_WORKSPACE/Artify_$RELEASE-free.apk
+          fi
+        working-directory: build/app/outputs/flutter-apk
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./*.apk
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          rm -f android/app/upload-keystore.jks
+          rm -f android/key.properties
+          rm -f .env
+          
+  apk_pro:
+    name: Create apk (pro)
+    runs-on: ubuntu-22.04
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "17.x"
+          distribution: 'temurin'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          ENV_BASE64="$([[ "$ENV" == "staging" ]] && echo "$ENV_STG_BASE64" || echo "$ENV_PROD_BASE64")"
+          echo "$ENV_BASE64" | base64 --decode > .env
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64 }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64 }}
+
+      - name: Install Deps
+        run: flutter pub get
+
+      - name: Configure Keystore for Android
+        run: |
+          echo "$PLAY_STORE_UPLOAD_KEY_PRO" | base64 --decode > app/upload-keystore-pro.jks
+          echo "storeFile=upload-keystore-pro.jks" >> key-pro.properties
+          echo "keyAlias=$KEYSTORE_KEY_ALIAS_PRO" >> key-pro.properties
+          echo "keyPassword=$KEYSTORE_KEY_PASSWORD_PRO" >> key-pro.properties
+          echo "storePassword=$KEYSTORE_STORE_PASSWORD_PRO" >> key-pro.properties
+        env:
+          PLAY_STORE_UPLOAD_KEY_PRO: ${{ secrets.PLAY_STORE_UPLOAD_KEY_PRO }}
+          KEYSTORE_KEY_ALIAS_PRO: ${{ secrets.KEYSTORE_KEY_ALIAS_PRO }}
+          KEYSTORE_KEY_PASSWORD_PRO: ${{ secrets.KEYSTORE_KEY_PASSWORD_PRO }}
+          KEYSTORE_STORE_PASSWORD_PRO: ${{ secrets.KEYSTORE_STORE_PASSWORD_PRO }}
+        working-directory: android
+
+      # Build the application.
+      - name: Build apk
+        run: |
+          FLAVOR="$([[ "$ENV" == "staging" ]] && echo "proStaging" || echo "proProduction")"
+          flutter build apk --dart-define-from-file=.env --no-tree-shake-icons --target lib/main_pro.dart --flavor $FLAVOR
+        env:
+          ENV: ${{ github.event.inputs.env }}
+
+      # Package the build.
+      - name: Copy build for Android
+        run: |
+          ls -la
+          if [[ "$ENV" == "staging" ]]; then
+            cp app-prostaging-release.apk $GITHUB_WORKSPACE/Artify_$RELEASE-pro.apk
+          else
+            cp app-proproduction-release.apk $GITHUB_WORKSPACE/Artify_$RELEASE-pro.apk
+          fi
+        working-directory: build/app/outputs/flutter-apk
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./*.apk
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          rm -f android/app/upload-keystore.jks
+          rm -f android/key.properties
+          rm -f .env
+
+  aab_free:
+    name: Create appbundle (free)
+    runs-on: ubuntu-22.04
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "17.x"
+          distribution: 'temurin'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          ENV_BASE64="$([[ "$ENV" == "staging" ]] && echo "$ENV_STG_BASE64" || echo "$ENV_PROD_BASE64")"
+          echo "$ENV_BASE64" | base64 --decode > .env
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64 }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64 }}
+
+      - name: Install Deps
+        run: flutter pub get
+
+      - name: Configure Keystore for Android
+        run: |
+          echo "$PLAY_STORE_UPLOAD_KEY" | base64 --decode > app/upload-keystore.jks
+          echo "storeFile=upload-keystore.jks" >> key.properties
+          echo "keyAlias=$KEYSTORE_KEY_ALIAS" >> key.properties
+          echo "keyPassword=$KEYSTORE_KEY_PASSWORD" >> key.properties
+          echo "storePassword=$KEYSTORE_STORE_PASSWORD" >> key.properties
+        env:
+          PLAY_STORE_UPLOAD_KEY: ${{ secrets.PLAY_STORE_UPLOAD_KEY }}
+          KEYSTORE_KEY_ALIAS: ${{ secrets.KEYSTORE_KEY_ALIAS }}
+          KEYSTORE_KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
+          KEYSTORE_STORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
+        working-directory: android
+
+      # Build the application.
+      - name: Build appbundle
+        run: |
+          FLAVOR="$([[ "$ENV" == "staging" ]] && echo "freeStaging" || echo "freeProduction")"
+          flutter build appbundle --dart-define-from-file=.env --no-tree-shake-icons --target lib/main_free.dart --flavor $FLAVOR
+        env:
+          ENV: ${{ github.event.inputs.env }}
+
+      # Package the build.
+      - name: Copy build for Android
+        if: github.event.inputs.env == 'staging'
+        run: |
+          ls -la
+          cp *.aab $GITHUB_WORKSPACE/Artify_$RELEASE-free.aab
+        working-directory: build/app/outputs/bundle/freeStagingRelease
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      - name: Copy build for Android
+        if: github.event.inputs.env == 'production'
+        run: |
+          ls -la
+          cp *.aab $GITHUB_WORKSPACE/Artify_$RELEASE-free.aab
+        working-directory: build/app/outputs/bundle/freeProductionRelease
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./*.aab
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          rm -f android/app/upload-keystore.jks
+          rm -f android/key.properties
+          rm -f .env
+
+  aab_pro:
+    name: Create appbundle (pro)
+    runs-on: ubuntu-22.04
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "17.x"
+          distribution: 'temurin'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          ENV_BASE64="$([[ "$ENV" == "staging" ]] && echo "$ENV_STG_BASE64" || echo "$ENV_PROD_BASE64")"
+          echo "$ENV_BASE64" | base64 --decode > .env
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64 }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64 }}
+
+      - name: Install Deps
+        run: flutter pub get
+
+      - name: Configure Keystore for Android
+        run: |
+          echo "$PLAY_STORE_UPLOAD_KEY_PRO" | base64 --decode > app/upload-keystore-pro.jks
+          echo "storeFile=upload-keystore-pro.jks" >> key-pro.properties
+          echo "keyAlias=$KEYSTORE_KEY_ALIAS_PRO" >> key-pro.properties
+          echo "keyPassword=$KEYSTORE_KEY_PASSWORD_PRO" >> key-pro.properties
+          echo "storePassword=$KEYSTORE_STORE_PASSWORD_PRO" >> key-pro.properties
+        env:
+          PLAY_STORE_UPLOAD_KEY_PRO: ${{ secrets.PLAY_STORE_UPLOAD_KEY_PRO }}
+          KEYSTORE_KEY_ALIAS_PRO: ${{ secrets.KEYSTORE_KEY_ALIAS_PRO }}
+          KEYSTORE_KEY_PASSWORD_PRO: ${{ secrets.KEYSTORE_KEY_PASSWORD_PRO }}
+          KEYSTORE_STORE_PASSWORD_PRO: ${{ secrets.KEYSTORE_STORE_PASSWORD_PRO }}
+        working-directory: android
+
+      # Build the application.
+      - name: Build appbundle
+        run: |
+          FLAVOR="$([[ "$ENV" == "staging" ]] && echo "proStaging" || echo "proProduction")"
+          flutter build appbundle --dart-define-from-file=.env --no-tree-shake-icons --target lib/main_pro.dart --flavor $FLAVOR
+        env:
+          ENV: ${{ github.event.inputs.env }}
+
+      # Package the build.
+      - name: Copy build for Android
+        if: github.event.inputs.env == 'staging'
+        run: |
+          ls -la
+          cp *.aab $GITHUB_WORKSPACE/Artify_$RELEASE-pro.aab
+        working-directory: build/app/outputs/bundle/proStagingRelease
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      - name: Copy build for Android
+        if: github.event.inputs.env == 'production'
+        run: |
+          ls -la
+          cp *.aab $GITHUB_WORKSPACE/Artify_$RELEASE-pro.aab
+        working-directory: build/app/outputs/bundle/proProductionRelease
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./*.aab
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          rm -f android/app/upload-keystore.jks
+          rm -f android/key.properties
+          rm -f .env
+
+  ios_free:
+    name: Create ios (free)
+    runs-on: macos-14
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          ENV_BASE64="$([[ "$ENV" == "staging" ]] && echo "$ENV_STG_BASE64" || echo "$ENV_PROD_BASE64")"
+          echo "$ENV_BASE64" | base64 --decode > .env
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64 }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64 }}
+
+      - name: Resolving flutter dependencies
+        run: flutter pub get
+
+      - name: Resolving ios dependencies
+        run: cd ios && pod install --repo-update && cd ..
+
+      - name: Install the Apple certificate and provisioning profile
+        env:
+          CERT_DEV_BASE64: ${{ secrets.CERT_DEV_BASE64 }}
+          CERT_BASE64: ${{ secrets.CERT_BASE64 }}
+          P12_DEV_BASE64: ${{ secrets.P12_DEV_BASE64 }}
+          P12_BASE64: ${{ secrets.P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          PROVISION_PROFILE_DEV_BASE64: ${{ secrets.PROVISION_PROFILE_DEV_BASE64 }}
+          PROVISION_PROFILE_BASE64: ${{ secrets.PROVISION_PROFILE_BASE64 }}
+          PROVISION_PROFILE_DEV_BASE64_PRO: ${{ secrets.PROVISION_PROFILE_DEV_BASE64_PRO }}
+          PROVISION_PROFILE_BASE64_PRO: ${{ secrets.PROVISION_PROFILE_BASE64_PRO }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # create variables
+          CERTIFICATE_DEV_PATH=$RUNNER_TEMP/build_certificate_dev.p12
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          CERT_DEV_PATH=$RUNNER_TEMP/ios_development.cer
+          CERT_PATH=$RUNNER_TEMP/ios_distribution.cer
+          PP_DEV_PATH=$RUNNER_TEMP/artify_dev.mobileprovision
+          PP_PATH=$RUNNER_TEMP/artify_appstore.mobileprovision
+          PP_PRO_DEV_PATH=$RUNNER_TEMP/artify_pro_dev.mobileprovision
+          PP_PRO_PATH=$RUNNER_TEMP/artify_pro_appstore.mobileprovision
+          KEYCHAIN_PATH=$RUNNER_TEMP/pg-signing.keychain-db
+
+          # import certificate and provisioning profile from secrets
+          echo -n "$P12_DEV_BASE64" | base64 --decode --output $CERTIFICATE_DEV_PATH
+          echo -n "$P12_BASE64" | base64 --decode --output $CERTIFICATE_PATH
+          echo -n "$CERT_DEV_BASE64" | base64 --decode --output $CERT_DEV_PATH
+          echo -n "$CERT_BASE64" | base64 --decode --output $CERT_PATH
+          echo -n "$PROVISION_PROFILE_DEV_BASE64" | base64 --decode --output $PP_DEV_PATH
+          echo -n "$PROVISION_PROFILE_BASE64" | base64 --decode --output $PP_PATH
+          echo -n "$PROVISION_PROFILE_DEV_BASE64_PRO" | base64 --decode --output $PP_PRO_DEV_PATH
+          echo -n "$PROVISION_PROFILE_BASE64_PRO" | base64 --decode --output $PP_PRO_PATH
+
+          # create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # import certificate to keychain
+          security import $CERTIFICATE_DEV_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security import $CERT_DEV_PATH -P "$P12_PASSWORD" -A -t cert -k $KEYCHAIN_PATH
+          security import $CERT_PATH -P "$P12_PASSWORD" -A -t cert -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # apply provisioning profile
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          mv $PP_DEV_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+          mv $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+          mv $PP_PRO_DEV_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+          mv $PP_PRO_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+
+      - name: Build ipa
+        if: github.event.inputs.env == 'staging'
+        run: |
+          echo "╠ Removing build products and intermediate files from the build root..."
+          cd ios && xcodebuild clean && cd ..
+          echo "╠ Releasing to adhoc..."
+          flutter build ipa --dart-define-from-file=.env --target lib/main_free.dart --export-options-plist=ios/ExportOptions/free/debug.plist
+
+      - name: Build ipa
+        if: github.event.inputs.env == 'production'
+        run: |
+          echo "╠ Removing build products and intermediate files from the build root..."
+          cd ios && xcodebuild clean && cd ..
+          echo "╠ Releasing to app store..."
+          flutter build ipa --dart-define-from-file=.env --target lib/main_free.dart --export-options-plist=ios/ExportOptions/free/release.plist
+
+      # Package the build.
+      - name: Copy build for iOS
+        run: |
+          ls -la
+          cp *.ipa $GITHUB_WORKSPACE/Artify_$RELEASE-free.ipa
+        working-directory: build/ios/ipa
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./*.ipa
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          if [ -f "$RUNNER_TEMP/pg-signing.keychain-db" ]; then
+            echo "$RUNNER_TEMP/pg-signing.keychain-db"
+            security delete-keychain $RUNNER_TEMP/pg-signing.keychain-db
+          fi
+          rm -f ~/Library/MobileDevice/Provisioning\ Profiles/artify_*.mobileprovision
+          rm -f .env
+
+  ios_pro:
+    name: Create ios (pro)
+    runs-on: macos-14
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          ENV_BASE64="$([[ "$ENV" == "staging" ]] && echo "$ENV_STG_BASE64" || echo "$ENV_PROD_BASE64")"
+          echo "$ENV_BASE64" | base64 --decode > .env
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64 }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64 }}
+
+      - name: Resolving flutter dependencies
+        run: flutter pub get
+
+      - name: Resolving ios dependencies
+        run: cd ios && pod install --repo-update && cd ..
+
+      - name: Install the Apple certificate and provisioning profile
+        env:
+          CERT_DEV_BASE64: ${{ secrets.CERT_DEV_BASE64 }}
+          CERT_BASE64: ${{ secrets.CERT_BASE64 }}
+          P12_DEV_BASE64: ${{ secrets.P12_DEV_BASE64 }}
+          P12_BASE64: ${{ secrets.P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          PROVISION_PROFILE_DEV_BASE64: ${{ secrets.PROVISION_PROFILE_DEV_BASE64 }}
+          PROVISION_PROFILE_BASE64: ${{ secrets.PROVISION_PROFILE_BASE64 }}
+          PROVISION_PROFILE_DEV_BASE64_PRO: ${{ secrets.PROVISION_PROFILE_DEV_BASE64_PRO }}
+          PROVISION_PROFILE_BASE64_PRO: ${{ secrets.PROVISION_PROFILE_BASE64_PRO }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # create variables
+          CERTIFICATE_DEV_PATH=$RUNNER_TEMP/build_certificate_dev.p12
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          CERT_DEV_PATH=$RUNNER_TEMP/ios_development.cer
+          CERT_PATH=$RUNNER_TEMP/ios_distribution.cer
+          PP_DEV_PATH=$RUNNER_TEMP/artify_dev.mobileprovision
+          PP_PATH=$RUNNER_TEMP/artify_appstore.mobileprovision
+          PP_PRO_DEV_PATH=$RUNNER_TEMP/artify_pro_dev.mobileprovision
+          PP_PRO_PATH=$RUNNER_TEMP/artify_pro_appstore.mobileprovision
+          KEYCHAIN_PATH=$RUNNER_TEMP/pg-signing.keychain-db
+
+          # import certificate and provisioning profile from secrets
+          echo -n "$P12_DEV_BASE64" | base64 --decode --output $CERTIFICATE_DEV_PATH
+          echo -n "$P12_BASE64" | base64 --decode --output $CERTIFICATE_PATH
+          echo -n "$CERT_DEV_BASE64" | base64 --decode --output $CERT_DEV_PATH
+          echo -n "$CERT_BASE64" | base64 --decode --output $CERT_PATH
+          echo -n "$PROVISION_PROFILE_DEV_BASE64" | base64 --decode --output $PP_DEV_PATH
+          echo -n "$PROVISION_PROFILE_BASE64" | base64 --decode --output $PP_PATH
+          echo -n "$PROVISION_PROFILE_DEV_BASE64_PRO" | base64 --decode --output $PP_PRO_DEV_PATH
+          echo -n "$PROVISION_PROFILE_BASE64_PRO" | base64 --decode --output $PP_PRO_PATH
+
+          # create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # import certificate to keychain
+          security import $CERTIFICATE_DEV_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security import $CERT_DEV_PATH -P "$P12_PASSWORD" -A -t cert -k $KEYCHAIN_PATH
+          security import $CERT_PATH -P "$P12_PASSWORD" -A -t cert -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # apply provisioning profile
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          mv $PP_DEV_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+          mv $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+          mv $PP_PRO_DEV_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+          mv $PP_PRO_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+
+      - name: Build ipa
+        if: github.event.inputs.env == 'staging'
+        run: |
+          echo "╠ Removing build products and intermediate files from the build root..."
+          cd ios && xcodebuild clean && cd ..
+          echo "╠ Releasing to adhoc..."
+          flutter build ipa --dart-define-from-file=.env --target lib/main_pro.dart --flavor pro --export-options-plist=ios/ExportOptions/pro/debug.plist
+
+      - name: Build ipa
+        if: github.event.inputs.env == 'production'
+        run: |
+          echo "╠ Removing build products and intermediate files from the build root..."
+          cd ios && xcodebuild clean && cd ..
+          echo "╠ Releasing to app store..."
+          flutter build ipa --dart-define-from-file=.env --target lib/main_pro.dart --flavor pro --export-options-plist=ios/ExportOptions/pro/release.plist
+
+      # Package the build.
+      - name: Copy build for iOS
+        run: |
+          ls -la
+          cp *.ipa $GITHUB_WORKSPACE/Artify_$RELEASE-pro.ipa
+        working-directory: build/ios/ipa
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./*.ipa
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          if [ -f "$RUNNER_TEMP/pg-signing.keychain-db" ]; then
+            echo "$RUNNER_TEMP/pg-signing.keychain-db"
+            security delete-keychain $RUNNER_TEMP/pg-signing.keychain-db
+          fi
+          rm -f ~/Library/MobileDevice/Provisioning\ Profiles/artify_*.mobileprovision
+          rm -f .env
+
+  macos_dmg:
+    name: Create macos dmg
+    runs-on: macos-14
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          ENV_BASE64="$([[ "$ENV" == "staging" ]] && echo "$ENV_STG_BASE64" || echo "$ENV_PROD_BASE64")"
+          echo "$ENV_BASE64" | base64 --decode > .env
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64 }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64 }}
+
+      - name: Resolving flutter dependencies
+        run: flutter pub get
+
+      - name: Resolving macos dependencies
+        run: cd macos && pod install --repo-update && cd ..
+
+      - name: Build macOS
+        run: |
+          echo "╠ Removing build products and intermediate files from the build root..."
+          cd macos && xcodebuild clean && cd ..
+          echo "╠ Releasing to app store..."
+          flutter build macos --dart-define-from-file=.env --target lib/main_free.dart
+
+      - name: Install certificates
+        env:
+          DEVELOPER_ID_APPLICATION_P12_BASE64_MAC: ${{ secrets.DEVELOPER_ID_APPLICATION_P12_BASE64_MAC }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # create variables
+          DEVELOPER_ID_APPLICATION_CERTIFICATE_PATH=$RUNNER_TEMP/build_developerID_application_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/pg-signing.keychain-db
+          
+          # import certificate and provisioning profile from secrets
+          echo -n "$DEVELOPER_ID_APPLICATION_P12_BASE64_MAC" | base64 --decode --output $DEVELOPER_ID_APPLICATION_CERTIFICATE_PATH
+          
+          # create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          # security default-keychain -s $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          
+          # import certificate to keychain
+          security import $DEVELOPER_ID_APPLICATION_CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+      - name: Code Signing
+        run: /usr/bin/codesign --deep --force -s "$DEVELOPER_ID_APPLICATION_SIGNING_IDENTITY" --options runtime Artify.app -v
+        working-directory: build/macos/Build/Products/Release
+        env:
+          DEVELOPER_ID_APPLICATION_SIGNING_IDENTITY: ${{ secrets.DEVELOPER_ID_APPLICATION_SIGNING_IDENTITY }}
+
+      - name: Notarize app
+        run: |
+          # We can't notarize an app bundle directly, but we need to compress it as an archive.
+          # Therefore, we create a zip file containing our app bundle, so that we can send it to the
+          # notarization service
+          echo "Creating temp notarization archive"
+          ditto -c -k --keepParent "Artify.app" "Artify.zip"
+
+          # Here we send the notarization request to the Apple's Notarization service, waiting for the result.
+          # This typically takes a few seconds inside a CI environment, but it might take more depending on the App
+          # characteristics. Visit the Notarization docs for more information and strategies on how to optimize it if
+          # you're curious
+          echo "Notarize app"
+          xcrun notarytool submit "Artify.zip" --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_PASSWORD" --wait
+
+          # Finally, we need to "attach the staple" to our executable, which will allow our app to be
+          # validated by macOS even when an internet connection is not available.
+          echo "Attach staple"
+          xcrun stapler staple "Artify.app"
+        working-directory: build/macos/Build/Products/Release
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+
+      - name: Install appdmg
+        run: npm install -g appdmg
+
+      - name: Build DMG
+        run: |
+          bash scripts/build-dmg.sh
+          mv Artify.dmg Artify_"$RELEASE"_macos_universal.dmg
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      # Package the build.
+      - name: Copy build for snap
+        run: ls -la *.dmg
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./*.dmg
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          if [ -f "$RUNNER_TEMP/pg-signing.keychain-db" ]; then
+            echo "$RUNNER_TEMP/pg-signing.keychain-db"
+            security delete-keychain $RUNNER_TEMP/pg-signing.keychain-db
+          fi
+          rm -f .env
+
+  macos_pkg:
+    name: Create macos pkg
+    runs-on: macos-14
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          ENV_BASE64="$([[ "$ENV" == "staging" ]] && echo "$ENV_STG_BASE64" || echo "$ENV_PROD_BASE64")"
+          echo "$ENV_BASE64" | base64 --decode > .env
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64 }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64 }}
+
+      - name: Resolving flutter dependencies
+        run: flutter pub get
+
+      - name: Resolving macos dependencies
+        run: cd macos && pod install --repo-update && cd ..
+
+      - name: Build macOS
+        run: |
+          echo "╠ Removing build products and intermediate files from the build root..."
+          cd macos && xcodebuild clean && cd ..
+          echo "╠ Releasing to app store..."
+          flutter build macos --dart-define-from-file=.env --target lib/main_free.dart
+
+      - name: Install certificates
+        run: |
+          # create variables
+          DEVELOPER_ID_INSTALLER_CERTIFICATE_PATH=$RUNNER_TEMP/build_developerID_installer_certificate.p12
+          DEVELOPER_ID_APPLICATION_CERTIFICATE_PATH=$RUNNER_TEMP/build_developerID_application_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/pg-signing.keychain-db
+
+          # import certificate and provisioning profile from secrets
+          echo -n "$DEVELOPER_ID_INSTALLER_P12_BASE64_MAC" | base64 --decode --output $DEVELOPER_ID_INSTALLER_CERTIFICATE_PATH
+          echo -n "$DEVELOPER_ID_APPLICATION_P12_BASE64_MAC" | base64 --decode --output $DEVELOPER_ID_APPLICATION_CERTIFICATE_PATH
+
+          # create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # import certificate to keychain
+          security import $DEVELOPER_ID_INSTALLER_CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security import $DEVELOPER_ID_APPLICATION_CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+          # security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+        env:
+          DEVELOPER_ID_INSTALLER_P12_BASE64_MAC: ${{ secrets.DEVELOPER_ID_INSTALLER_P12_BASE64_MAC }}
+          DEVELOPER_ID_APPLICATION_P12_BASE64_MAC: ${{ secrets.DEVELOPER_ID_APPLICATION_P12_BASE64_MAC }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+
+      - name: Code Signing
+        run: |
+          # https://stackoverflow.com/questions/70991268/how-to-sign-and-notarize-a-pkg-within-a-github-actions-macos-runner
+          bash scripts/codesign-pkg.sh "$DEVELOPER_ID_APPLICATION_SIGNING_IDENTITY"
+        env:
+          DEVELOPER_ID_APPLICATION_SIGNING_IDENTITY: ${{ secrets.DEVELOPER_ID_APPLICATION_SIGNING_IDENTITY }}
+
+      - name: Build & Sign pkg
+        run: |
+          # https://www.hexnode.com/mobile-device-management/help/how-to-sign-macos-pkg-files-for-deployment-with-hexnode-mdm/
+          xcrun pkgbuild --component "./Artify.app" --install-location /Applications --sign "$DEVELOPER_ID_INSTALLER_SIGNING_IDENTITY" Artify-unsigned.pkg
+          xcrun productbuild --package Artify-unsigned.pkg --sign "$DEVELOPER_ID_INSTALLER_SIGNING_IDENTITY" Artify.pkg
+        env:
+          DEVELOPER_ID_INSTALLER_SIGNING_IDENTITY: ${{ secrets.DEVELOPER_ID_INSTALLER_SIGNING_IDENTITY }}
+        working-directory: build/macos/Build/Products/Release
+
+      - name: Notarize & Staple
+        run: |
+          # Here we send the notarization request to the Apple's Notarization service, waiting for the result.
+          # This typically takes a few seconds inside a CI environment, but it might take more depending on the App
+          # characteristics. Visit the Notarization docs for more information and strategies on how to optimize it if
+          # you're curious
+          echo "Notarize pkg"
+          xcrun notarytool submit "Artify.pkg" --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" --output-format "json" --wait
+
+          # Finally, we need to "attach the staple" to our executable, which will allow our app to be
+          # validated by macOS even when an internet connection is not available.
+          echo "Attach staple"
+          xcrun stapler staple "Artify.pkg"
+        working-directory: build/macos/Build/Products/Release
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+
+      # Package the build.
+      - name: Copy build for pkg
+        run: |
+          rm -f Artify-unsigned.pkg
+          ls -la *.pkg
+          mv Artify.pkg $GITHUB_WORKSPACE/Artify_"$RELEASE"_macos_universal.pkg
+        working-directory: build/macos/Build/Products/Release
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./*.pkg
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          if [ -f "$RUNNER_TEMP/pg-signing.keychain-db" ]; then
+            echo "$RUNNER_TEMP/pg-signing.keychain-db"
+            security delete-keychain $RUNNER_TEMP/pg-signing.keychain-db
+          fi
+          rm -f .env
+
+  macos_appstore_free:
+    name: Create macos pkg (appstore-free)
+    runs-on: macos-14
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          ENV_BASE64="$([[ "$ENV" == "staging" ]] && echo "$ENV_STG_BASE64" || echo "$ENV_PROD_BASE64")"
+          echo "$ENV_BASE64" | base64 --decode > .env
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64 }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64 }}
+
+      - name: Resolving flutter dependencies
+        run: flutter pub get
+
+      - name: Resolving macos dependencies
+        run: cd macos && pod install --repo-update && cd ..
+
+      - name: Build macOS
+        run: |
+          echo "╠ Removing build products and intermediate files from the build root..."
+          cd macos && xcodebuild clean && cd ..
+          echo "╠ Releasing to mac app store..."
+          flutter build macos --dart-define-from-file=.env --target lib/main_free.dart
+
+      - name: Install certificates
+        run: |
+          # create variables
+          # Mac Installer Distribution
+          THIRD_PARTY_MAC_DEVELOPER_INSTALLER_CERTIFICATE_PATH=$RUNNER_TEMP/build_mac_developer_installer_certificate.p12
+          # Mac App Distribution
+          THIRD_PARTY_MAC_DEVELOPER_APPLICATION_CERTIFICATE_PATH=$RUNNER_TEMP/build_mac_developer_application_certificate.p12
+          THIRD_PARTY_MAC_DEVELOPER_APPLICATION_PP_PATH=$RUNNER_TEMP/artify_mac_appstore.provisionprofile
+          KEYCHAIN_PATH=$RUNNER_TEMP/pg-signing.keychain-db
+
+          # import certificate and provisioning profile from secrets
+          echo -n "$THIRD_PARTY_MAC_DEVELOPER_INSTALLER_P12_BASE64_MAC" | base64 --decode --output $THIRD_PARTY_MAC_DEVELOPER_INSTALLER_CERTIFICATE_PATH
+          echo -n "$THIRD_PARTY_MAC_DEVELOPER_APPLICATION_P12_BASE64_MAC" | base64 --decode --output $THIRD_PARTY_MAC_DEVELOPER_APPLICATION_CERTIFICATE_PATH
+          echo -n "$THIRD_PARTY_MAC_DEVELOPER_APPLICATION_PROVISION_PROFILE_BASE64_MAC" | base64 --decode --output $THIRD_PARTY_MAC_DEVELOPER_APPLICATION_PP_PATH
+
+          # create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # import certificate to keychain
+          security import $THIRD_PARTY_MAC_DEVELOPER_INSTALLER_CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security import $THIRD_PARTY_MAC_DEVELOPER_APPLICATION_CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+          # security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          
+          # apply provisioning profile
+          # https://developer.apple.com/documentation/bundleresources/placing_content_in_a_bundle/
+          # security cms -D -i artify_mac_appstore.provisionprofile
+          mv $THIRD_PARTY_MAC_DEVELOPER_APPLICATION_PP_PATH build/macos/Build/Products/Release/Artify.app/Contents/embedded.provisionprofile
+        env:
+          THIRD_PARTY_MAC_DEVELOPER_INSTALLER_P12_BASE64_MAC: ${{ secrets.THIRD_PARTY_MAC_DEVELOPER_INSTALLER_P12_BASE64_MAC }}
+          THIRD_PARTY_MAC_DEVELOPER_APPLICATION_P12_BASE64_MAC: ${{ secrets.THIRD_PARTY_MAC_DEVELOPER_APPLICATION_P12_BASE64_MAC }}
+          THIRD_PARTY_MAC_DEVELOPER_APPLICATION_PROVISION_PROFILE_BASE64_MAC: ${{ secrets.THIRD_PARTY_MAC_DEVELOPER_APPLICATION_PROVISION_PROFILE_BASE64_MAC }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+
+      - name: Code Signing
+        run: |
+          # https://stackoverflow.com/questions/70991268/how-to-sign-and-notarize-a-pkg-within-a-github-actions-macos-runner
+          # https://developer.apple.com/forums/thread/733942
+          # https://stackoverflow.com/questions/60384835/dyld-library-not-loaded-code-signature-invalid
+          # codesign -dvvv Artify.app
+          # https://lessons.livecode.com/a/876834-signing-and-uploading-apps-to-the-mac-app-store
+          
+          # 1. Code sign executables
+          echo "Code sign executables"
+          /usr/bin/codesign --deep --force --sign "$THIRD_PARTY_MAC_DEVELOPER_APPLICATION_SIGNING_IDENTITY" build/macos/Build/Products/Release/Artify.app
+          
+          # 2. Code sign entitlements.plist
+          echo "Code sign entitlements.plist"
+          /usr/bin/codesign --force --sign "$THIRD_PARTY_MAC_DEVELOPER_APPLICATION_SIGNING_IDENTITY" --entitlements macos/Runner/AppStore-Release.entitlements build/macos/Build/Products/Release/Artify.app
+          
+          # 3. Just to confirm all is well, verify the code signing
+          # No response means that there were no errors and it is code signed.
+          # /usr/bin/codesign --verify build/macos/Build/Products/Release/Artify.app
+        env:
+          THIRD_PARTY_MAC_DEVELOPER_APPLICATION_SIGNING_IDENTITY: ${{ secrets.THIRD_PARTY_MAC_DEVELOPER_APPLICATION_SIGNING_IDENTITY }}
+
+      - name: Create pkg
+        run: |
+          # https://www.hexnode.com/mobile-device-management/help/how-to-sign-macos-pkg-files-for-deployment-with-hexnode-mdm/
+          # [Test the installer].  (Note the "-target /" that comes after the path to the pkg file)
+          # It will go through the installation process to confirm that the installer package is OK.
+          # NOTE: If the app is signed for distribution to the Mac App Store the resulting app will not run locally.
+          # sudo installer -store -package <path_to_app_pkg_file> -target /
+          xcrun productbuild --sign "$THIRD_PARTY_MAC_DEVELOPER_INSTALLER_SIGNING_IDENTITY" --component Artify.app /Applications Artify.pkg
+        env:
+          THIRD_PARTY_MAC_DEVELOPER_INSTALLER_SIGNING_IDENTITY: ${{ secrets.THIRD_PARTY_MAC_DEVELOPER_INSTALLER_SIGNING_IDENTITY }}
+        working-directory: build/macos/Build/Products/Release
+
+      # Package the build.
+      - name: Copy build for pkg
+        run: |
+          ls -la *.pkg
+          cp Artify.pkg $GITHUB_WORKSPACE/Artify_"$RELEASE"_macos_appstore-free_universal.pkg
+        working-directory: build/macos/Build/Products/Release
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./*.pkg
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          if [ -f "$RUNNER_TEMP/pg-signing.keychain-db" ]; then
+            echo "$RUNNER_TEMP/pg-signing.keychain-db"
+            security delete-keychain $RUNNER_TEMP/pg-signing.keychain-db
+          fi
+          rm -f .env
+
+  macos_appstore_pro:
+    name: Create macos pkg (appstore-pro)
+    runs-on: macos-14
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          ENV_BASE64="$([[ "$ENV" == "staging" ]] && echo "$ENV_STG_BASE64" || echo "$ENV_PROD_BASE64")"
+          echo "$ENV_BASE64" | base64 --decode > .env
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64 }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64 }}
+
+      - name: Resolving flutter dependencies
+        run: flutter pub get
+
+      - name: Resolving macos dependencies
+        run: cd macos && pod install --repo-update && cd ..
+
+      - name: Build macOS
+        run: |
+          echo "╠ Removing build products and intermediate files from the build root..."
+          cd macos && xcodebuild clean && cd ..
+          echo "╠ Releasing to mac app store..."
+          flutter build macos --dart-define-from-file=.env --target lib/main_pro.dart --flavor pro
+
+      - name: Install certificates
+        run: |
+          # create variables
+          # Mac Installer Distribution
+          THIRD_PARTY_MAC_DEVELOPER_INSTALLER_CERTIFICATE_PATH=$RUNNER_TEMP/build_mac_developer_installer_certificate.p12
+          # Mac App Distribution
+          THIRD_PARTY_MAC_DEVELOPER_APPLICATION_CERTIFICATE_PATH=$RUNNER_TEMP/build_mac_developer_application_certificate.p12
+          THIRD_PARTY_MAC_DEVELOPER_APPLICATION_PP_PRO_PATH=$RUNNER_TEMP/artify_pro_mac_appstore.provisionprofile
+          KEYCHAIN_PATH=$RUNNER_TEMP/pg-signing.keychain-db
+
+          # import certificate and provisioning profile from secrets
+          echo -n "$THIRD_PARTY_MAC_DEVELOPER_INSTALLER_P12_BASE64_MAC" | base64 --decode --output $THIRD_PARTY_MAC_DEVELOPER_INSTALLER_CERTIFICATE_PATH
+          echo -n "$THIRD_PARTY_MAC_DEVELOPER_APPLICATION_P12_BASE64_MAC" | base64 --decode --output $THIRD_PARTY_MAC_DEVELOPER_APPLICATION_CERTIFICATE_PATH
+          echo -n "$THIRD_PARTY_MAC_DEVELOPER_APPLICATION_PROVISION_PROFILE_BASE64_MAC_PRO" | base64 --decode --output $THIRD_PARTY_MAC_DEVELOPER_APPLICATION_PP_PRO_PATH
+
+          # create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # import certificate to keychain
+          security import $THIRD_PARTY_MAC_DEVELOPER_INSTALLER_CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security import $THIRD_PARTY_MAC_DEVELOPER_APPLICATION_CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+          # security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          
+          # apply provisioning profile
+          # https://developer.apple.com/documentation/bundleresources/placing_content_in_a_bundle/
+          # security cms -D -i artify_pro_mac_appstore.provisionprofile
+          mv $THIRD_PARTY_MAC_DEVELOPER_APPLICATION_PP_PRO_PATH build/macos/Build/Products/Release-pro/Artify\ Pro.app/Contents/embedded.provisionprofile
+        env:
+          THIRD_PARTY_MAC_DEVELOPER_INSTALLER_P12_BASE64_MAC: ${{ secrets.THIRD_PARTY_MAC_DEVELOPER_INSTALLER_P12_BASE64_MAC }}
+          THIRD_PARTY_MAC_DEVELOPER_APPLICATION_P12_BASE64_MAC: ${{ secrets.THIRD_PARTY_MAC_DEVELOPER_APPLICATION_P12_BASE64_MAC }}
+          THIRD_PARTY_MAC_DEVELOPER_APPLICATION_PROVISION_PROFILE_BASE64_MAC_PRO: ${{ secrets.THIRD_PARTY_MAC_DEVELOPER_APPLICATION_PROVISION_PROFILE_BASE64_MAC_PRO }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+
+      - name: Code Signing
+        run: |
+          # https://stackoverflow.com/questions/70991268/how-to-sign-and-notarize-a-pkg-within-a-github-actions-macos-runner
+          # https://developer.apple.com/forums/thread/733942
+          # https://stackoverflow.com/questions/60384835/dyld-library-not-loaded-code-signature-invalid
+          # codesign -dvvv Artify.app
+          # https://lessons.livecode.com/a/876834-signing-and-uploading-apps-to-the-mac-app-store
+          
+          # 1. Code sign executables
+          echo "Code sign executables"
+          /usr/bin/codesign --deep --force --sign "$THIRD_PARTY_MAC_DEVELOPER_APPLICATION_SIGNING_IDENTITY" build/macos/Build/Products/Release-pro/Artify\ Pro.app
+          
+          # 2. Code sign entitlements.plist
+          echo "Code sign entitlements.plist"
+          /usr/bin/codesign --force --sign "$THIRD_PARTY_MAC_DEVELOPER_APPLICATION_SIGNING_IDENTITY" --entitlements macos/Runner/AppStorePro-Release.entitlements build/macos/Build/Products/Release-pro/Artify\ Pro.app
+          
+          # 3. Just to confirm all is well, verify the code signing
+          # No response means that there were no errors and it is code signed.
+          # /usr/bin/codesign --verify build/macos/Build/Products/Release-pro/Artify\ Pro.app
+        env:
+          THIRD_PARTY_MAC_DEVELOPER_APPLICATION_SIGNING_IDENTITY: ${{ secrets.THIRD_PARTY_MAC_DEVELOPER_APPLICATION_SIGNING_IDENTITY }}
+
+      - name: Create pkg
+        run: |
+          # https://www.hexnode.com/mobile-device-management/help/how-to-sign-macos-pkg-files-for-deployment-with-hexnode-mdm/
+          # [Test the installer].  (Note the "-target /" that comes after the path to the pkg file)
+          # It will go through the installation process to confirm that the installer package is OK.
+          # NOTE: If the app is signed for distribution to the Mac App Store the resulting app will not run locally.
+          # sudo installer -store -package <path_to_app_pkg_file> -target /
+          xcrun productbuild --sign "$THIRD_PARTY_MAC_DEVELOPER_INSTALLER_SIGNING_IDENTITY" --component Artify\ Pro.app /Applications Artify\ Pro.pkg
+        env:
+          THIRD_PARTY_MAC_DEVELOPER_INSTALLER_SIGNING_IDENTITY: ${{ secrets.THIRD_PARTY_MAC_DEVELOPER_INSTALLER_SIGNING_IDENTITY }}
+        working-directory: build/macos/Build/Products/Release-pro
+
+      # Package the build.
+      - name: Copy build for pkg
+        run: |
+          ls -la *.pkg
+          cp Artify\ Pro.pkg $GITHUB_WORKSPACE/Artify_"$RELEASE"_macos_appstore-pro_universal.pkg
+        working-directory: build/macos/Build/Products/Release-pro
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./*.pkg
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          if [ -f "$RUNNER_TEMP/pg-signing.keychain-db" ]; then
+            echo "$RUNNER_TEMP/pg-signing.keychain-db"
+            security delete-keychain $RUNNER_TEMP/pg-signing.keychain-db
+          fi
+          rm -f .env
+
+  macos_zip:
+    name: Create macos zip
+    runs-on: macos-14
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          ENV_BASE64="$([[ "$ENV" == "staging" ]] && echo "$ENV_STG_BASE64" || echo "$ENV_PROD_BASE64")"
+          echo "$ENV_BASE64" | base64 --decode > .env
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64 }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64 }}
+
+      - name: Resolving flutter dependencies
+        run: flutter pub get
+
+      - name: Resolving macos dependencies
+        run: cd macos && pod install --repo-update && cd ..
+
+      - name: Build macOS
+        run: |
+          echo "╠ Removing build products and intermediate files from the build root..."
+          cd macos && xcodebuild clean && cd ..
+          echo "╠ Releasing to app store..."
+          flutter build macos --dart-define-from-file=.env --target lib/main_free.dart
+
+      - name: Install certificates
+        env:
+          DEVELOPER_ID_APPLICATION_P12_BASE64_MAC: ${{ secrets.DEVELOPER_ID_APPLICATION_P12_BASE64_MAC }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # create variables
+          DEVELOPER_ID_APPLICATION_CERTIFICATE_PATH=$RUNNER_TEMP/build_developerID_application_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/pg-signing.keychain-db
+
+          # import certificate and provisioning profile from secrets
+          echo -n "$DEVELOPER_ID_APPLICATION_P12_BASE64_MAC" | base64 --decode --output $DEVELOPER_ID_APPLICATION_CERTIFICATE_PATH
+
+          # create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          # security default-keychain -s $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # import certificate to keychain
+          security import $DEVELOPER_ID_APPLICATION_CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+      - name: Code Signing
+        run: /usr/bin/codesign --deep --force -s "$DEVELOPER_ID_APPLICATION_SIGNING_IDENTITY" --options runtime Artify.app -v
+        working-directory: build/macos/Build/Products/Release
+        env:
+          DEVELOPER_ID_APPLICATION_SIGNING_IDENTITY: ${{ secrets.DEVELOPER_ID_APPLICATION_SIGNING_IDENTITY }}
+
+      - name: Notarize app
+        run: |
+          # We can't notarize an app bundle directly, but we need to compress it as an archive.
+          # Therefore, we create a zip file containing our app bundle, so that we can send it to the
+          # notarization service
+          echo "Creating temp notarization archive"
+          ditto -c -k --keepParent "Artify.app" "Artify.zip"
+
+          # Here we send the notarization request to the Apple's Notarization service, waiting for the result.
+          # This typically takes a few seconds inside a CI environment, but it might take more depending on the App
+          # characteristics. Visit the Notarization docs for more information and strategies on how to optimize it if
+          # you're curious
+          echo "Notarize app"
+          xcrun notarytool submit "Artify.zip" --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_PASSWORD" --wait
+
+          # Finally, we need to "attach the staple" to our executable, which will allow our app to be
+          # validated by macOS even when an internet connection is not available.
+          echo "Attach staple"
+          xcrun stapler staple "Artify.app"
+        working-directory: build/macos/Build/Products/Release
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+
+      - name: Install p7zip
+        run: |
+          if ! command -v 7z >/dev/null 2>&1; then
+            echo "7z not exists"
+            brew install p7zip
+          fi
+
+      - name: Build zip
+        run: 7z a Artify_"$RELEASE"_macos_universal.zip ./Artify.app
+        working-directory: build/macos/Build/Products/Release
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      # Package the build.
+      - name: Copy build for zip
+        run: |
+          ls -la *.zip
+          mv Artify_*_macos_universal.zip $GITHUB_WORKSPACE/
+        working-directory: build/macos/Build/Products/Release
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./*.zip
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          if [ -f "$RUNNER_TEMP/pg-signing.keychain-db" ]; then
+            echo "$RUNNER_TEMP/pg-signing.keychain-db"
+            security delete-keychain $RUNNER_TEMP/pg-signing.keychain-db
+          fi
+          rm -f .env
+
+  macos_tar:
+    name: Create macos tar
+    runs-on: macos-14
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          ENV_BASE64="$([[ "$ENV" == "staging" ]] && echo "$ENV_STG_BASE64" || echo "$ENV_PROD_BASE64")"
+          echo "$ENV_BASE64" | base64 --decode > .env
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64 }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64 }}
+
+      - name: Resolving flutter dependencies
+        run: flutter pub get
+
+      - name: Resolving macos dependencies
+        run: cd macos && pod install --repo-update && cd ..
+
+      - name: Build macOS
+        run: |
+          echo "╠ Removing build products and intermediate files from the build root..."
+          cd macos && xcodebuild clean && cd ..
+          echo "╠ Releasing to app store..."
+          flutter build macos --dart-define-from-file=.env --target lib/main_free.dart
+
+      - name: Install certificates
+        env:
+          DEVELOPER_ID_APPLICATION_P12_BASE64_MAC: ${{ secrets.DEVELOPER_ID_APPLICATION_P12_BASE64_MAC }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # create variables
+          DEVELOPER_ID_APPLICATION_CERTIFICATE_PATH=$RUNNER_TEMP/build_developerID_application_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/pg-signing.keychain-db
+
+          # import certificate and provisioning profile from secrets
+          echo -n "$DEVELOPER_ID_APPLICATION_P12_BASE64_MAC" | base64 --decode --output $DEVELOPER_ID_APPLICATION_CERTIFICATE_PATH
+
+          # create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          # security default-keychain -s $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # import certificate to keychain
+          security import $DEVELOPER_ID_APPLICATION_CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+      - name: Code Signing
+        run: /usr/bin/codesign --deep --force -s "$DEVELOPER_ID_APPLICATION_SIGNING_IDENTITY" --options runtime Artify.app -v
+        working-directory: build/macos/Build/Products/Release
+        env:
+          DEVELOPER_ID_APPLICATION_SIGNING_IDENTITY: ${{ secrets.DEVELOPER_ID_APPLICATION_SIGNING_IDENTITY }}
+
+      - name: Notarize app
+        run: |
+          # We can't notarize an app bundle directly, but we need to compress it as an archive.
+          # Therefore, we create a zip file containing our app bundle, so that we can send it to the
+          # notarization service
+          echo "Creating temp notarization archive"
+          ditto -c -k --keepParent "Artify.app" "Artify.zip"
+
+          # Here we send the notarization request to the Apple's Notarization service, waiting for the result.
+          # This typically takes a few seconds inside a CI environment, but it might take more depending on the App
+          # characteristics. Visit the Notarization docs for more information and strategies on how to optimize it if
+          # you're curious
+          echo "Notarize app"
+          xcrun notarytool submit "Artify.zip" --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_PASSWORD" --wait
+
+          # Finally, we need to "attach the staple" to our executable, which will allow our app to be
+          # validated by macOS even when an internet connection is not available.
+          echo "Attach staple"
+          xcrun stapler staple "Artify.app"
+        working-directory: build/macos/Build/Products/Release
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+
+      - name: Build tar
+        run: tar -czaf Artify_"$RELEASE"_macos_universal.tar.gz ./Artify.app
+        working-directory: build/macos/Build/Products/Release
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      # Package the build.
+      - name: Copy build for tar
+        run: |
+          ls -la *.tar.gz
+          mv *.tar.gz $GITHUB_WORKSPACE/
+        working-directory: build/macos/Build/Products/Release
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./*.tar.gz
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          if [ -f "$RUNNER_TEMP/pg-signing.keychain-db" ]; then
+            echo "$RUNNER_TEMP/pg-signing.keychain-db"
+            security delete-keychain $RUNNER_TEMP/pg-signing.keychain-db
+          fi
+          rm -f .env
+
+  linux_deb:
+    name: Create linux deb
+    runs-on: ubuntu-22.04
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies for Linux
+        run: |
+          sudo apt-get update -y && sudo apt-get upgrade -y
+          sudo apt-get install -y curl libcurl4-openssl-dev git unzip xz-utils zip libglu1-mesa
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
+          sudo apt-get install -y rpm patchelf
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          ENV_BASE64="$([[ "$ENV" == "staging" ]] && echo "$ENV_STG_BASE64" || echo "$ENV_PROD_BASE64")"
+          echo "$ENV_BASE64" | base64 --decode > .env
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64 }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64 }}
+
+      - name: Install flutter_distributor
+        run: dart pub global activate flutter_distributor
+
+      - name: Install flutter dependencies
+        run: flutter pub get
+
+      - name: Build deb
+        run: |
+          flutter_distributor package \
+            --flutter-build-args "dart-define-from-file=.env,target=lib/main_free.dart,target-platform=linux-x64" \
+            --platform linux \
+            --targets deb \
+            --artifact-name {{name}}_"$RELEASE"_{{platform}}_amd64.{{ext}}
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      # Package the build.
+      - name: Copy build for deb
+        run: |
+          ls -laR
+          cp ./**/*.deb $GITHUB_WORKSPACE/
+        working-directory: dist
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./*.deb
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: rm -f .env
+
+  linux_deb_aarch64:
+    name: Create linux deb (aarch64)
+    runs-on: buildjet-4vcpu-ubuntu-2204-arm
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies for Linux
+        run: |
+          sudo apt-get update -y && sudo apt-get upgrade -y
+          sudo apt-get install -y curl libcurl4-openssl-dev git unzip xz-utils zip libglu1-mesa
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
+
+      - name: Setup Flutter
+        shell: bash
+        run: |
+          chmod +x ./scripts/install-flutter-ubuntu-actions.sh
+          ./scripts/install-flutter-ubuntu-actions.sh
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          ENV_BASE64="$([[ "$ENV" == "staging" ]] && echo "$ENV_STG_BASE64" || echo "$ENV_PROD_BASE64")"
+          echo "$ENV_BASE64" | base64 --decode > .env
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64 }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64 }}
+
+      - name: Install flutter_distributor
+        run: dart pub global activate flutter_distributor
+
+      - name: Install flutter dependencies
+        run: flutter pub get
+
+      - name: Build deb
+        run: |
+          flutter_distributor package \
+            --flutter-build-args "dart-define-from-file=.env,target=lib/main_free.dart,target-platform=linux-arm64" \
+            --platform linux \
+            --targets deb \
+            --artifact-name {{name}}_"$RELEASE"_{{platform}}_aarch64.{{ext}}
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      # Package the build.
+      - name: Copy build for deb
+        run: |
+          ls -laR
+          cp ./**/*.deb $GITHUB_WORKSPACE/
+        working-directory: dist
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./*.deb
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: rm -f .env
+
+  linux_rpm:
+    name: Create linux rpm
+    runs-on: ubuntu-22.04
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17.x"
+          distribution: 'temurin'
+
+      - name: Install dependencies for Linux
+        run: |
+          sudo apt-get update -y && sudo apt-get upgrade -y
+          sudo apt-get install -y curl libcurl4-openssl-dev git unzip xz-utils zip libglu1-mesa
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          ENV_BASE64="$([[ "$ENV" == "staging" ]] && echo "$ENV_STG_BASE64" || echo "$ENV_PROD_BASE64")"
+          echo "$ENV_BASE64" | base64 --decode > .env
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64 }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64 }}
+
+      - name: Install flutter_distributor
+        run: dart pub global activate flutter_distributor
+
+      - name: Install flutter dependencies
+        run: flutter pub get
+
+      - name: Build RPM
+        run: |
+          flutter_distributor package \
+            --flutter-build-args "dart-define-from-file=.env,target=lib/main_free.dart,target-platform=linux-x64" \
+            --platform linux \
+            --targets rpm \
+            --artifact-name {{name}}_"$RELEASE"_{{platform}}_amd64.{{ext}}
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      # Package the build.
+      - name: Copy build for rpm
+        run: |
+          ls -laR
+          cp ./**/*.rpm $GITHUB_WORKSPACE/
+        working-directory: dist
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./*.rpm
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: rm -f .env
+
+  linux_rpm_aarch64:
+    name: Create linux rpm (aarch64)
+    runs-on: buildjet-4vcpu-ubuntu-2204-arm
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "17.x"
+          distribution: 'temurin'
+
+      - name: Install dependencies for Linux
+        run: |
+          sudo apt-get update -y && sudo apt-get upgrade -y
+          sudo apt-get install -y curl libcurl4-openssl-dev git unzip xz-utils zip libglu1-mesa
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
+          sudo apt-get install -y rpm patchelf
+
+      - name: Setup Flutter
+        shell: bash
+        run: |
+          chmod +x ./scripts/install-flutter-ubuntu-actions.sh
+          ./scripts/install-flutter-ubuntu-actions.sh
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          ENV_BASE64="$([[ "$ENV" == "staging" ]] && echo "$ENV_STG_BASE64" || echo "$ENV_PROD_BASE64")"
+          echo "$ENV_BASE64" | base64 --decode > .env
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64 }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64 }}
+
+      - name: Install flutter_distributor
+        run: dart pub global activate flutter_distributor
+
+      - name: Install flutter dependencies
+        run: flutter pub get
+
+      - name: Install yq
+        run: |
+          if ! command -v yq >/dev/null 2>&1; then
+            echo "yq not exists"
+            wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_arm64 -O /usr/bin/yq &&\
+            chmod +x /usr/bin/yq
+          fi
+          yq --version
+
+      - name: Update make_config.yaml
+        run: yq -i '.build_arch = "aarch64"' linux/packaging/rpm/make_config.yaml
+
+      - name: Build RPM
+        run: |
+          flutter_distributor package \
+            --flutter-build-args "dart-define-from-file=.env,target=lib/main_free.dart,target-platform=linux-arm64" \
+            --platform linux \
+            --targets rpm \
+            --artifact-name {{name}}_"$RELEASE"_{{platform}}_aarch64.{{ext}}
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      # Package the build.
+      - name: Copy build for rpm
+        run: |
+          ls -laR
+          cp ./**/*.rpm $GITHUB_WORKSPACE/
+        working-directory: dist
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./*.rpm
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: rm -f .env
+
+  linux_tar:
+    name: Create linux tar
+    runs-on: ubuntu-22.04
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies for Linux
+        run: |
+          sudo apt-get update -y && sudo apt-get upgrade -y
+          sudo apt-get install -y curl libcurl4-openssl-dev git unzip xz-utils zip libglu1-mesa
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
+          sudo apt-get install -y p7zip-full p7zip-rar
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          ENV_BASE64="$([[ "$ENV" == "staging" ]] && echo "$ENV_STG_BASE64" || echo "$ENV_PROD_BASE64")"
+          echo "$ENV_BASE64" | base64 --decode > .env
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64 }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64 }}
+
+      - name: Install flutter dependencies
+        run: flutter pub get
+
+      - name: Build flutter
+        run: flutter build linux --dart-define-from-file=.env --target lib/main_free.dart --target-platform=linux-x64
+
+      - name: Build tar
+        run: |
+          archiveName="artify_"$RELEASE"_linux_amd64.tar.gz"
+          cd build/linux/x64/release/bundle
+          tar -czaf $archiveName ./*
+          mv $archiveName $GITHUB_WORKSPACE/
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      # Package the build.
+      - name: Copy build for tar
+        run: ls -la
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./*.tar.gz
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: rm -f .env
+
+  linux_tar_aarch64:
+    name: Create linux tar (aarch64)
+    runs-on: buildjet-4vcpu-ubuntu-2204-arm
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies for Linux
+        run: |
+          sudo apt-get update -y && sudo apt-get upgrade -y
+          sudo apt-get install -y curl libcurl4-openssl-dev git unzip xz-utils zip libglu1-mesa
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
+          sudo apt-get install -y p7zip-full p7zip-rar
+
+      - name: Setup Flutter
+        shell: bash
+        run: |
+          chmod +x ./scripts/install-flutter-ubuntu-actions.sh
+          ./scripts/install-flutter-ubuntu-actions.sh
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          ENV_BASE64="$([[ "$ENV" == "staging" ]] && echo "$ENV_STG_BASE64" || echo "$ENV_PROD_BASE64")"
+          echo "$ENV_BASE64" | base64 --decode > .env
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64 }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64 }}
+
+      - name: Install flutter_distributor
+        run: dart pub global activate flutter_distributor
+
+      - name: Install flutter dependencies
+        run: flutter pub get
+
+      - name: Build app
+        run: flutter build linux --dart-define-from-file=.env --target lib/main_free.dart --target-platform=linux-arm64
+
+      - name: Install yq
+        run: |
+          if ! command -v yq >/dev/null 2>&1; then
+            echo "yq not exists"
+            wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_arm64 -O /usr/bin/yq &&\
+            chmod +x /usr/bin/yq
+          fi
+          yq --version
+
+      - name: Build tar
+        run: |
+          archiveName="artify_"$RELEASE"_linux_aarch64.tar.gz"
+          cd build/linux/arm64/release/bundle
+          tar -czaf $archiveName ./*
+          mv $archiveName $GITHUB_WORKSPACE/
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      # Package the build.
+      - name: Copy build for tar
+        run: ls -la *.tar.gz
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./*.tar.gz
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: rm -f .env
+
+  linux_snap:
+    name: Create linux snap
+    runs-on: ubuntu-22.04
+    env:
+      LXD_GROUP: lxd
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup LXD
+        uses: canonical/setup-lxd@v0.1.2
+        with:
+          channel: latest/stable
+          group: ${{ env.LXD_GROUP }}
+
+      - name: Configure .env
+        run: |
+          ENV_BASE64="$([[ "$ENV" == "staging" ]] && echo "$ENV_STG_BASE64" || echo "$ENV_PROD_BASE64")"
+          echo "$ENV_BASE64" | base64 --decode > .env
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64 }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64 }}
+
+      - name: Install snapcraft
+        run: sudo snap install snapcraft --classic
+
+      - name: Update snapcraft.yaml
+        run: |
+          rm -f snap/snapcraft-arm64.yaml
+          VERSION="$VERSION_SHORT.$BUILD_NUMBER" yq -i '.version = strenv(VERSION)' snap/snapcraft.yaml
+        env:
+          VERSION_SHORT: ${{ needs.create_release.outputs.version_short }}
+          BUILD_NUMBER: ${{ needs.create_release.outputs.build_number }}
+
+      - name: Build snap
+        run: |
+          # https://snapcraft.io/docs/flutter-applications
+          sudo snapcraft --output artify_"$RELEASE"_linux_amd64.snap
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      # Package the build.
+      - name: Copy build for snap
+        run: ls -la *.snap
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./*.snap
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          rm -f .env
+          if which snapcraft >/dev/null 2>&1; then
+            echo "snapcraft exists"
+            sudo snapcraft clean
+          fi
+
+  linux_snap_aarch64:
+    name: Create linux snap (aarch64)
+    runs-on: buildjet-4vcpu-ubuntu-2204-arm
+    env:
+      LXD_GROUP: lxd
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup LXD
+        uses: canonical/setup-lxd@v0.1.2
+        with:
+          channel: latest/stable
+          group: ${{ env.LXD_GROUP }}
+
+      - name: Configure .env
+        run: |
+          ENV_BASE64="$([[ "$ENV" == "staging" ]] && echo "$ENV_STG_BASE64" || echo "$ENV_PROD_BASE64")"
+          echo "$ENV_BASE64" | base64 --decode > .env
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64 }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64 }}
+
+      - name: Install yq
+        run: |
+          if ! command -v yq >/dev/null 2>&1; then
+            echo "yq not exists"
+            sudo snap install -y yq
+          fi
+          yq --version
+
+      - name: Update snapcraft.yaml
+        run: |
+          rm -f snap/snapcraft.yaml
+          mv snap/snapcraft-arm64.yaml snap/snapcraft.yaml
+          VERSION="$VERSION_SHORT.$BUILD_NUMBER" yq -i '.version = strenv(VERSION)' snap/snapcraft.yaml
+        env:
+          VERSION_SHORT: ${{ needs.create_release.outputs.version_short }}
+          BUILD_NUMBER: ${{ needs.create_release.outputs.build_number }}
+
+      - name: Install snapcraft
+        run: sudo snap install snapcraft --classic
+
+      - name: Build snap
+        run: |
+          # https://snapcraft.io/docs/flutter-applications
+          sudo snapcraft --output "artify_"$RELEASE"_linux_aarch64.snap"
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      # Package the build.
+      - name: Copy build for snap
+        run: ls -la *.snap
+
+      - name: Upload assets
+        run: gh release upload "$TAG_NAME" ./*.snap
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          rm -f .env
+          if which snapcraft >/dev/null 2>&1; then
+            echo "snapcraft exists"
+            sudo snapcraft clean
+          fi
+
+  windows_msi:
+    name: Create windows msi
+    runs-on: windows-2022
+    env:
+      Platform: x64
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Install yq
+        shell: pwsh
+        run: |
+          choco install yq
+          yq --version
+
+      - name: Install wix toolset
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix
+          wix --version
+
+      - name: Configure .env
+        run: |
+          echo "$pwd"
+          $env_base64 = $(If ($env:ENV -eq "staging") {"$env:ENV_STG_BASE64"} Else {"$env:ENV_PROD_BASE64"})
+          $bytes = echo $env_base64 | %{[Convert]::FromBase64String($_)}
+          [IO.File]::WriteAllBytes("$pwd\.env", $bytes)
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64_WINDOWS }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64_WINDOWS }}
+
+      - name: Install yq
+        shell: pwsh
+        run: |
+          choco install yq
+          yq --version
+
+      - name: Install flutter dependencies
+        run: flutter pub get
+
+      - name: Build windows
+        run: flutter build windows --dart-define-from-file=.env --target lib/main_free.dart
+
+      - name: Update msi version
+        shell: pwsh
+        run: |
+          # 文件路径
+          $filePath = "msi\artify\artify\Package.wxs"
+
+          # 读取文件内容
+          $content = Get-Content -Path $filePath -Raw
+
+          # 替换使用正则表达式
+          $newContent = $content -replace "\b\d{1,4}\.\d{1,4}\.\d{1,4}\.\d{1,4}\b", "$env:VERSION_SHORT.$env:BUILD_NUMBER"
+
+          # 写回文件
+          Set-Content -Path $filePath -Value $newContent -NoNewline
+        env:
+          VERSION_SHORT: ${{ needs.create_release.outputs.version_short }}
+          BUILD_NUMBER: ${{ needs.create_release.outputs.build_number }}
+
+      - name: Create msi
+        shell: pwsh
+        run: |
+          echo $env:RUNNER_TEMP
+          $certificatePath = "$env:RUNNER_TEMP\artify.pfx"
+          # https://stackoverflow.com/questions/15414678/how-to-decode-a-base64-string
+          # https://stackoverflow.com/questions/66239147/pfx-encoded-and-back-to-pfx-in-powershell
+          $bytes = echo $env:WINDOWS_CERTIFICATE | %{[Convert]::FromBase64String($_)}
+          [IO.File]::WriteAllBytes("$certificatePath", $bytes)
+
+          $env:IconPath = "$pwd\windows\runner\resources\app_icon.ico"
+          $env:FLUTTER_BUILD_OUTPUT_DIR = "$pwd\build\windows\$env:Platform\runner\Release"
+          dotnet build .\msi\artify\artify\artify.wixproj --arch "$env:Platform" --configuration Release
+
+          $signtool = "C:\Program Files (x86)\Microsoft SDKs\ClickOnce\SignTool\signtool.exe"
+          & $signtool sign /v /f "$certificatePath" /fd SHA256 /t http://timestamp.comodoca.com/authenticode /p "$env:WINDOWS_CERTIFICATE_PASSWORD" /n "$env:WINDOWS_PUBLISHER_NAME" (get-item ".\msi\artify\artify\bin\$env:Platform\Release\*\*.msi")
+        env:
+          WINDOWS_PUBLISHER_NAME: ${{ secrets.WINDOWS_PUBLISHER_NAME }}
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+
+      # Package the build.
+      - name: Copy build for msi
+        shell: pwsh
+        run: |
+          Rename-Item -Path "$pwd\msi\artify\artify\bin\$env:Platform\Release\en-US\artify.msi" -NewName "artify_$env:RELEASE`_windows_$env:Platform`_en-US.msi"
+          Rename-Item -Path "$pwd\msi\artify\artify\bin\$env:Platform\Release\zh-CN\artify.msi" -NewName "artify_$env:RELEASE`_windows_$env:Platform`_zh-CN.msi"
+          ls -R ".\msi\artify\artify\bin\$env:Platform\Release"
+          cp ".\msi\artify\artify\bin\$env:Platform\Release\*\*.msi" "$env:GITHUB_WORKSPACE\"
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      - name: Upload assets
+        run: |
+          # https://github.com/cli/cli/issues/5099
+          gh release upload "$env:TAG_NAME" (get-item .\*.msi)
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          ls
+          if (test-path -Path "$env:RUNNER_TEMP\artify.pfx") {
+            echo "$env:RUNNER_TEMP\artify.pfx"
+            remove-item -Path "$env:RUNNER_TEMP\artify.pfx" -Force -ErrorAction SilentlyContinue
+          } else {
+            echo "File($env:RUNNER_TEMP\artify.pfx) doesn't exist."
+          }
+          if (test-path -Path "$pwd\.env") {
+            echo "Remove file($pwd\.env)"
+            remove-item -Path "$pwd\.env" -Force -ErrorAction SilentlyContinue
+          } else {
+            echo "File($pwd\.env) doesn't exist."
+          }
+
+  windows_msix_free:
+    name: Create windows msix (free)
+    runs-on: windows-2022
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          echo "$pwd"
+          $env_base64 = $(If ($env:ENV -eq "staging") {"$env:ENV_STG_BASE64"} Else {"$env:ENV_PROD_BASE64"})
+          $bytes = echo $env_base64 | %{[Convert]::FromBase64String($_)}
+          [IO.File]::WriteAllBytes("$pwd\.env", $bytes)
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64_WINDOWS }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64_WINDOWS }}
+
+      - name: Install yq
+        shell: pwsh
+        run: |
+          choco install yq
+          yq --version
+
+      - name: Update config
+        shell: pwsh
+        run: |
+          echo $env:RUNNER_TEMP
+          # https://stackoverflow.com/questions/15414678/how-to-decode-a-base64-string
+          # https://stackoverflow.com/questions/66239147/pfx-encoded-and-back-to-pfx-in-powershell
+          # $certificatePath = "$env:RUNNER_TEMP\artify.pfx"
+          # $bytes = echo $env:WINDOWS_CERTIFICATE | %{[Convert]::FromBase64String($_)}
+          # [IO.File]::WriteAllBytes("$certificatePath", $bytes)
+
+          $yamlFile = ".\pubspec.yaml"
+          $yamlContent = Get-Content -Raw -Path $yamlFile
+
+          # 获取环境变量的值
+          $identityName = (Get-Item -Path Env:WINDOWS_IDENTITY_NAME).Value
+          $publisher = (Get-Item -Path Env:WINDOWS_PUBLISHER).Value
+          $publisherName = (Get-Item -Path Env:WINDOWS_PUBLISHER_NAME).Value
+          # $certificatePassword = (Get-Item -Path Env:WINDOWS_CERTIFICATE_PASSWORD).Value
+
+          # 使用 yq 更新多个字段
+          $updatedYamlContent = echo $yamlContent | yq e ".msix_config.identity_name = `"$identityName`" | .msix_config.publisher = `"$publisher`" | .msix_config.publisher_display_name = `"$publisherName`" | del(.msix_config.certificate_path) | del(.msix_config.certificate_password)" -
+
+          # 将更新后的内容写回文件
+          Set-Content -Path $yamlFile -Value $updatedYamlContent
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+          WINDOWS_IDENTITY_NAME: ${{ secrets.WINDOWS_IDENTITY_NAME }}
+          WINDOWS_PUBLISHER: ${{ secrets.WINDOWS_PUBLISHER }}
+          WINDOWS_PUBLISHER_NAME: ${{ secrets.WINDOWS_PUBLISHER_NAME }}
+
+      - name: Install flutter dependencies
+        run: flutter pub get
+
+      - name: Build windows
+        run: flutter build windows --dart-define-from-file=.env --target lib/main_free.dart
+
+      - name: Create msix
+        run: dart run msix:create --store --build-windows false --output-name "artify_$env:RELEASE`_windows_store-free_x64"
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      # Package the build.
+      - name: Copy build for msix
+        run: |
+          ls
+          cp .\*.msix "$env:GITHUB_WORKSPACE\"
+        working-directory: build\windows\x64\runner\Release
+
+      - name: Upload assets
+        run: |
+          # https://github.com/cli/cli/issues/5099
+          gh release upload "$env:TAG_NAME" (get-item .\*.msix)
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          if (test-path -Path "$env:RUNNER_TEMP\artify.pfx") {
+            echo "$env:RUNNER_TEMP\artify.pfx"
+            remove-item -Path "$env:RUNNER_TEMP\artify.pfx" -Force -ErrorAction SilentlyContinue
+          } else {
+            echo "File($env:RUNNER_TEMP\artify.pfx) doesn't exist."
+          }
+          
+          if (test-path -Path "windows\packaging\msix\make_config.yaml") {
+            echo "windows\packaging\msix\make_config.yaml"
+            remove-item -Path "windows\packaging\msix\make_config.yaml" -Force -ErrorAction SilentlyContinue
+          } else {
+            echo "File(windows\packaging\msix\make_config.yaml) doesn't exist."
+          }
+          
+          if (test-path -Path "$pwd\.env") {
+            echo "Remove file($pwd\.env)"
+            remove-item -Path "$pwd\.env" -Force -ErrorAction SilentlyContinue
+          } else {
+            echo "File($pwd\.env) doesn't exist."
+          }
+
+  windows_msix_pro:
+    name: Create windows msix (pro)
+    runs-on: windows-2022
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          echo "$pwd"
+          $env_base64 = $(If ($env:ENV -eq "staging") {"$env:ENV_STG_BASE64"} Else {"$env:ENV_PROD_BASE64"})
+          $bytes = echo $env_base64 | %{[Convert]::FromBase64String($_)}
+          [IO.File]::WriteAllBytes("$pwd\.env", $bytes)
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64_WINDOWS }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64_WINDOWS }}
+
+      - name: Install yq
+        shell: pwsh
+        run: |
+          choco install yq
+          yq --version
+
+      - name: Update config
+        shell: pwsh
+        run: |
+          echo $env:RUNNER_TEMP
+
+          Copy-Item -Path "windows\pro\CMakeLists.txt" -Destination "windows\CMakeLists.txt" -Force
+          Copy-Item -Path "windows\pro\main.cpp" -Destination "windows\runner\main.cpp" -Force
+          Copy-Item -Path "windows\pro\Runner.rc" -Destination "windows\runner\Runner.rc" -Force
+
+          # https://stackoverflow.com/questions/15414678/how-to-decode-a-base64-string
+          # https://stackoverflow.com/questions/66239147/pfx-encoded-and-back-to-pfx-in-powershell
+          # $certificatePath = "$env:RUNNER_TEMP\artify-pro.pfx"
+          # $bytes = echo $env:WINDOWS_CERTIFICATE_PRO | %{[Convert]::FromBase64String($_)}
+          # [IO.File]::WriteAllBytes("$certificatePath", $bytes)
+
+          $yamlFile = ".\pubspec.yaml"
+          $yamlContent = Get-Content -Raw -Path $yamlFile
+
+          # 获取环境变量的值
+          $identityName = (Get-Item -Path Env:WINDOWS_IDENTITY_NAME_PRO).Value
+          $publisher = (Get-Item -Path Env:WINDOWS_PUBLISHER_PRO).Value
+          $publisherName = (Get-Item -Path Env:WINDOWS_PUBLISHER_NAME_PRO).Value
+          # $certificatePassword = (Get-Item -Path Env:WINDOWS_CERTIFICATE_PASSWORD_PRO).Value
+
+          # 使用 yq 更新多个字段
+          $updatedYamlContent = echo $yamlContent | yq e ".msix_config.display_name = `"Artify Pro`" | .msix_config.identity_name = `"$identityName`" | .msix_config.publisher = `"$publisher`" | .msix_config.publisher_display_name = `"$publisherName`" | del(.msix_config.certificate_path) | del(.msix_config.certificate_password)" -
+
+          # 将更新后的内容写回文件
+          Set-Content -Path $yamlFile -Value $updatedYamlContent
+        env:
+          WINDOWS_CERTIFICATE_PRO: ${{ secrets.WINDOWS_CERTIFICATE_PRO }}
+          WINDOWS_CERTIFICATE_PASSWORD_PRO: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD_PRO }}
+          WINDOWS_IDENTITY_NAME_PRO: ${{ secrets.WINDOWS_IDENTITY_NAME_PRO }}
+          WINDOWS_PUBLISHER_PRO: ${{ secrets.WINDOWS_PUBLISHER_PRO }}
+          WINDOWS_PUBLISHER_NAME_PRO: ${{ secrets.WINDOWS_PUBLISHER_NAME_PRO }}
+
+      - name: Install flutter dependencies
+        run: flutter pub get
+
+      - name: Build windows
+        run: flutter build windows --dart-define-from-file=.env --target lib/main_pro.dart
+
+      - name: Create msix
+        run: dart run msix:create --store --build-windows false --output-name "artify_$env:RELEASE`_windows_store-pro_x64"
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      # Package the build.
+      - name: Copy build for msix
+        run: |
+          ls
+          cp .\*.msix "$env:GITHUB_WORKSPACE\"
+        working-directory: build\windows\x64\runner\Release
+
+      - name: Upload assets
+        run: |
+          # https://github.com/cli/cli/issues/5099
+          gh release upload "$env:TAG_NAME" (get-item .\*.msix)
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          if (test-path -Path "$env:RUNNER_TEMP\artify-pro.pfx") {
+            echo "$env:RUNNER_TEMP\artify-pro.pfx"
+            remove-item -Path "$env:RUNNER_TEMP\artify-pro.pfx" -Force -ErrorAction SilentlyContinue
+          } else {
+            echo "File($env:RUNNER_TEMP\artify-pro.pfx) doesn't exist."
+          }
+          
+          if (test-path -Path "windows\packaging\msix\make_config.yaml") {
+            echo "windows\packaging\msix\make_config.yaml"
+            remove-item -Path "windows\packaging\msix\make_config.yaml" -Force -ErrorAction SilentlyContinue
+          } else {
+            echo "File(windows\packaging\msix\make_config.yaml) doesn't exist."
+          }
+          
+          if (test-path -Path "$pwd\.env") {
+            echo "Remove file($pwd\.env)"
+            remove-item -Path "$pwd\.env" -Force -ErrorAction SilentlyContinue
+          } else {
+            echo "File($pwd\.env) doesn't exist."
+          }
+
+  windows_exe:
+    name: Create windows exe
+    runs-on: windows-2022
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          echo "$pwd"
+          $env_base64 = $(If ($env:ENV -eq "staging") {"$env:ENV_STG_BASE64"} Else {"$env:ENV_PROD_BASE64"})
+          $bytes = echo $env_base64 | %{[Convert]::FromBase64String($_)}
+          [IO.File]::WriteAllBytes("$pwd\.env", $bytes)
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64_WINDOWS }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64_WINDOWS }}
+
+      #      - name: Compile .iss to .exe installer
+      #        uses: Minionguyjpro/Inno-Setup-Action@v1.2.4
+      #        with:
+      #          path: windows/packaging/exe/inno_setup.iss
+      #          options: /O+
+
+      - name: Copy ChineseSimplified.isl to C:\Program Files (x86)\Inno Setup 6\Languages\
+        run: |
+          copy-item -Path windows\Languages\Unofficial\*.isl -Destination 'C:\Program Files (x86)\Inno Setup 6\Languages\'
+
+      - name: Install flutter_distributor
+        run: dart pub global activate flutter_distributor
+
+      - name: Install flutter dependencies
+        run: flutter pub get
+
+      - name: Install yq
+        shell: pwsh
+        run: |
+          choco install yq
+          yq --version
+
+      - name: Update config
+        shell: pwsh
+        run: |
+          $SETUP_ICON_FILE = "$pwd\windows\runner\resources\app_icon.ico"
+          echo $SETUP_ICON_FILE
+
+          $yamlFile = ".\windows\packaging\exe\make_config.yaml"
+          $yamlContent = Get-Content -Raw -Path $yamlFile
+
+          # 获取环境变量的值
+          $appId = (Get-Item -Path Env:WINDOWS_APP_ID).Value
+          $publisherName = (Get-Item -Path Env:WINDOWS_PUBLISHER_NAME).Value
+
+          # 使用 yq 更新多个字段
+          $updatedYamlContent = echo $yamlContent | yq e ".app_id = `"$appId`" | .publisher_name = `"$publisherName`" | .setup_icon_file = `"$SETUP_ICON_FILE`"" -
+
+          # 将更新后的内容写回文件
+          Set-Content -Path $yamlFile -Value $updatedYamlContent
+        env:
+          WINDOWS_APP_ID: ${{ secrets.WINDOWS_APP_ID }}
+          WINDOWS_PUBLISHER_NAME: ${{ secrets.WINDOWS_PUBLISHER_NAME }}
+
+      - name: Build exe
+        shell: pwsh
+        run: |
+          flutter_distributor package `
+            --flutter-build-args "dart-define-from-file=.env,target=lib/main_free.dart" `
+            --platform windows `
+            --targets exe `
+            --artifact-name "{{name}}_$env:RELEASE`_{{platform}}_x64.{{ext}}"
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      - name: Signing
+        run: |
+          echo $env:RUNNER_TEMP
+          $certificatePath = "$env:RUNNER_TEMP\artify.pfx"
+          # https://stackoverflow.com/questions/15414678/how-to-decode-a-base64-string
+          # https://stackoverflow.com/questions/66239147/pfx-encoded-and-back-to-pfx-in-powershell
+          $bytes = echo $env:WINDOWS_CERTIFICATE | %{[Convert]::FromBase64String($_)}
+          [IO.File]::WriteAllBytes("$certificatePath", $bytes)
+          $signtool = "C:\Program Files (x86)\Microsoft SDKs\ClickOnce\SignTool\signtool.exe"
+          & $signtool sign /f "$certificatePath" /fd SHA256 /t http://timestamp.comodoca.com/authenticode /p "$env:WINDOWS_CERTIFICATE_PASSWORD" /n "$env:WINDOWS_PUBLISHER_NAME" (get-item ".\**\*.exe")
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+          WINDOWS_PUBLISHER_NAME: ${{ secrets.WINDOWS_PUBLISHER_NAME }}
+        working-directory: dist
+
+      # Package the build.
+      - name: Copy build for exe
+        run: |
+          ls -R
+          cp .\**\*.exe "$env:GITHUB_WORKSPACE\"
+        working-directory: dist
+
+      - name: Upload assets
+        run: |
+          # https://github.com/cli/cli/issues/5099
+          gh release upload "$env:TAG_NAME" (get-item .\*.exe)
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          if (test-path -Path "$env:RUNNER_TEMP\artify.pfx") {
+            echo "$env:RUNNER_TEMP\artify.pfx"
+            remove-item -Path "$env:RUNNER_TEMP\artify.pfx" -Force -ErrorAction SilentlyContinue
+          } else {
+            echo "File($env:RUNNER_TEMP\artify.pfx) doesn't exist."
+          }
+          
+          if (test-path -Path "$pwd\.env") {
+            echo "Remove file($pwd\.env)"
+            remove-item -Path "$pwd\.env" -Force -ErrorAction SilentlyContinue
+          } else {
+            echo "File($pwd\.env) doesn't exist."
+          }
+
+  windows_zip:
+    name: Create windows zip
+    runs-on: windows-2022
+    needs:
+      - create_release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.27.1'
+
+      - name: Flutter doctor -v
+        run: flutter doctor -v
+
+      - name: Configure .env
+        run: |
+          echo "$pwd"
+          $env_base64 = $(If ($env:ENV -eq "staging") {"$env:ENV_STG_BASE64"} Else {"$env:ENV_PROD_BASE64"})
+          $bytes = echo $env_base64 | %{[Convert]::FromBase64String($_)}
+          [IO.File]::WriteAllBytes("$pwd\.env", $bytes)
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          ENV_STG_BASE64: ${{ secrets.ENV_STG_BASE64_WINDOWS }}
+          ENV_PROD_BASE64: ${{ secrets.ENV_PROD_BASE64_WINDOWS }}
+
+      - name: Install flutter_distributor
+        run: dart pub global activate flutter_distributor
+
+      - name: Install flutter dependencies
+        run: flutter pub get
+
+      - name: Build zip
+        shell: pwsh
+        run: |
+          flutter_distributor package `
+            --flutter-build-args "dart-define-from-file=.env,target=lib/main_free.dart" `
+            --platform windows `
+            --targets zip `
+            --artifact-name "{{name}}_$env:RELEASE`_{{platform}}_x64.{{ext}}"
+        env:
+          RELEASE: ${{ needs.create_release.outputs.release }}
+
+      # Package the build.
+      - name: Copy build for zip
+        run: |
+          ls -R
+          cp .\**\*.zip "$env:GITHUB_WORKSPACE\"
+        working-directory: dist
+
+      - name: Upload assets
+        run: |
+          # https://github.com/cli/cli/issues/5099
+          gh release upload "$env:TAG_NAME" (get-item .\*.zip)
+        env:
+          TAG_NAME: ${{ needs.create_release.outputs.tag_name }}
+          GH_TOKEN: ${{ secrets.ATY_RELEASE_TOKEN }}
+
+      - name: Clean up
+        if: ${{ always() }}
+        run: |
+          ls
+          if (test-path -Path "$pwd\.env") {
+            echo "Remove file($pwd\.env)"
+            remove-item -Path "$pwd\.env" -Force -ErrorAction SilentlyContinue
+          } else {
+            echo "File($pwd\.env) doesn't exist."
+          }

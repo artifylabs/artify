@@ -1,0 +1,22 @@
+display_name: Artify
+icon: logo/logo-512.png
+summary: Ideas, Painting & Art.
+group: Application/Emulator
+vendor: kjxbyz
+packager: kjxbyz
+packagerEmail: support@artifylabs.org
+license: GPL-3.0-only
+url: https://github.com/artifylabs/artify
+build_arch: x86_64
+
+metainfo: linux/shared/artify.metainfo.xml
+
+keywords:
+  - Artify
+
+generic_name: Artify
+
+categories:
+  - Utility
+
+startup_notify: true

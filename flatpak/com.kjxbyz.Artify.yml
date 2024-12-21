@@ -1,0 +1,59 @@
+id: com.kjxbyz.Artify
+
+# https://docs.flatpak.org/en/latest/available-runtimes.html
+runtime: org.freedesktop.Platform
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+command: artify
+
+# These are the permissions that the application needs
+# Read more about finishing here: https://docs.flatpak.org/en/latest/manifests.html#finishing
+# https://docs.flatpak.org/en/latest/sandbox-permissions.html
+finish-args:
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+  - --share=network
+  - --filesystem=xdg-download
+  - --filesystem=xdg-pictures
+
+modules:
+  - name: artify
+    buildsystem: simple
+    build-commands:
+      - bsdtar -Oxf artify.deb data.tar.zst | bsdtar -xf -
+      - install -Dm755 usr/share/artify/artify /app/bin/artify
+      - cp -r usr/share/artify/data usr/share/artify/lib /app/bin/
+
+      - desktop-file-edit --remove-key=Version --set-key=Terminal --set-value='false' --set-icon='com.kjxbyz.Artify' "usr/share/applications/artify.desktop"
+      - install -Dm644 usr/share/applications/artify.desktop /app/share/applications/com.kjxbyz.Artify.desktop
+
+      - install -Dm644 usr/share/icons/hicolor/128x128/apps/artify.png /app/share/icons/hicolor/128x128/apps/com.kjxbyz.Artify.png
+      - install -Dm644 usr/share/icons/hicolor/256x256/apps/artify.png /app/share/icons/hicolor/256x256/apps/com.kjxbyz.Artify.png
+
+      - install -Dm644 usr/share/metainfo/artify.metainfo.xml /app/share/appdata/com.kjxbyz.Artify.metainfo.xml
+    sources:
+      - type: file
+        only-arches:
+          - x86_64
+        url: https://github.com/artifylabs/artify/releases/download/v0.0.1+1/artify_0.0.1+1_linux_amd64.deb
+        dest-filename: artify.deb
+        sha256: 03cc773a38b1f93bbb2d3c66a190497d46bbadb4d9900d8fdea6e64c4ac47150
+        x-checker-data:
+          type: json
+          url: https://api.github.com/repos/artifylabs/artify/releases/latest
+          version-query: .tag_name | sub("v";"")
+          url-query: .assets[] | select(.name=="artify_" + $version + "_linux_amd64.deb") | .browser_download_url
+
+      - type: file
+        only-arches:
+          - aarch64
+        url: https://github.com/artifylabs/artify/releases/download/v0.0.1+1/artify_0.0.1+1_linux_aarch64.deb
+        dest-filename: artify.deb
+        sha256: d94c7eb624a11e6cd010f464f55c4deec61207d8040659663e4986e39676be1e
+        x-checker-data:
+          type: json
+          url: https://api.github.com/repos/artifylabs/artify/releases/latest
+          version-query: .tag_name | sub("v";"")
+          url-query: .assets[] | select(.name=="artify_" + $version + "_linux_aarch64.deb") | .browser_download_url

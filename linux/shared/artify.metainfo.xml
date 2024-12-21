@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Generator for metainfo & .desktop files:
+    https://www.freedesktop.org/software/appstream/metainfocreator/#/
+    https://docs.flathub.org/banner-preview/
+    https://www.freedesktop.org/software/appstream/docs/chap-Quickstart.html#sect-Quickstart-DesktopApps
+-->
+<component type="desktop-application">
+    <id>com.kjxbyz.Artify</id>
+    <provides>
+        <id>artify</id>
+    </provides>
+    <name>Artify</name>
+    <summary>Ideas, Painting &amp; Art</summary>
+    <summary xml:lang="zh">理念、绘画与艺术</summary>
+    <developer id="com.kjxbyz">
+        <name>Insco LLC</name>
+    </developer>
+    <url type="bugtracker">https://github.com/artifylabs/artify/issues</url>
+    <url type="homepage">https://www.artifylabs.org</url>
+    <url type="donation">https://buymeacoffee.com/wangying</url>
+    <url type="faq">https://github.com/artifylabs/artify/discussions</url>
+    <url type="translate">https://crowdin.com/project/artify</url>
+    <url type="vcs-browser">https://github.com/artifylabs/artify</url>
+    <metadata_license>MIT</metadata_license>
+    <project_license>GPL-3.0-only</project_license>
+    <branding>
+        <color type="primary" scheme_preference="light">#e0f2f7</color>
+        <color type="primary" scheme_preference="dark">#1d2a36</color>
+    </branding>
+    <supports>
+        <control>pointing</control>
+        <control>keyboard</control>
+    </supports>
+    <recommends>
+        <control>touch</control>
+    </recommends>
+    <description>
+        <p>Introducing Artify - Ideas, Painting &amp; Art.</p>
+        <p xml:lang="zh">介绍Artify - 理念、绘画与艺术。</p>
+    </description>
+    <launchable type="desktop-id">com.kjxbyz.Artify.desktop</launchable>
+    <screenshots>
+        <screenshot type="default">
+            <image>https://raw.githubusercontent.com/artifylabs/artify/v0.0.1+1/screenshots/desktop.png</image>
+            <caption>Default screenshot for desktop</caption>
+        </screenshot>
+        <screenshot>
+            <image>https://raw.githubusercontent.com/artifylabs/artify/v0.0.1+1/screenshots/desktop-zh.png</image>
+            <caption>Support Chinese</caption>
+        </screenshot>
+        <screenshot>
+            <image>https://raw.githubusercontent.com/artifylabs/artify/v0.0.1+1/screenshots/desktop-dark.png</image>
+            <caption>Dark Mode</caption>
+        </screenshot>
+    </screenshots>
+    <releases>
+        <release version="v0.0.1+1" date="2024-12-21">
+            <url type="details">https://github.com/artifylabs/artify/blob/v0.0.1+1/CHANGELOG.md</url>
+        </release>
+    </releases>
+    <content_rating type="oars-1.1">
+        <content_attribute id="social-chat">intense</content_attribute>
+        <content_attribute id="social-audio">intense</content_attribute>
+        <content_attribute id="social-contacts">intense</content_attribute>
+    </content_rating>
+    <update_contact>support@artifylabs.org</update_contact>
+</component>

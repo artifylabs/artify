@@ -2,22 +2,22 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 
 import 'config/dependencies.dart';
-import 'main.dart';
+import 'main_common.dart';
 
-/// Development config entry point.
-/// Launch with `flutter run --target lib/main_development.dart`.
-/// Uses local data.
+/// Default main method
 void main() {
+  // Launch development config by default
   Logger.root.level = Level.ALL;
 
   runApp(
     MultiProvider(
-      providers: providersLocal,
+      providers: kReleaseMode ? providersRemote : providersLocal,
       child: const MainApp(),
     ),
   );

@@ -1,5 +1,5 @@
 import 'package:artify/config/dependencies.dart';
-import 'package:artify/main.dart';
+import 'package:artify/main_common.dart';
 import 'package:artify/ui/activities/widgets/activities_screen.dart';
 import 'package:artify/ui/booking/widgets/booking_screen.dart';
 import 'package:artify/ui/core/ui/custom_checkbox.dart';

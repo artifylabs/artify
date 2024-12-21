@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:artify/config/dependencies.dart';
-import 'package:artify/main.dart';
+import 'package:artify/main_common.dart';
 import 'package:artify/ui/activities/widgets/activities_screen.dart';
 import 'package:artify/ui/auth/login/widgets/login_screen.dart';
 import 'package:artify/ui/auth/logout/widgets/logout_button.dart';

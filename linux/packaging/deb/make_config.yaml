@@ -1,0 +1,26 @@
+display_name: Artify
+package_name: artify
+maintainer:
+  name: kjxbyz
+  email: support@artifylabs.org
+priority: optional
+section: x11
+installed_size: 6604
+essential: false
+icon: logo/logo-512.png
+metainfo: linux/shared/artify.metainfo.xml
+
+postinstall_scripts:
+  - echo "Installing Artify"
+postuninstall_scripts:
+  - echo "Artify installed"
+
+keywords:
+  - Artify
+
+generic_name: Artify
+
+categories:
+  - Utility
+
+startup_notify: true

@@ -21,6 +21,8 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		2E97AF4B2D16BE24007EF02D /* AppInfo-Pro.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 2E97AF4A2D16BE24007EF02D /* AppInfo-Pro.xcconfig */; };
+		2E97AF5F2D16C698007EF02D /* Info-Pro.plist in Resources */ = {isa = PBXBuildFile; fileRef = 2E97AF5E2D16C698007EF02D /* Info-Pro.plist */; };
 		331C80D8294CF71000263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C80D7294CF71000263BE5 /* RunnerTests.swift */; };
 		335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 335BBD1A22A9A15E00E9071D /* GeneratedPluginRegistrant.swift */; };
 		33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC10F02044A3C60003C045 /* AppDelegate.swift */; };
@@ -64,6 +66,10 @@
 /* Begin PBXFileReference section */
 		0D1D76CAEA3EDD79C151BB0F /* Pods-ArtifyMac.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ArtifyMac.debug.xcconfig"; path = "Target Support Files/Pods-ArtifyMac/Pods-ArtifyMac.debug.xcconfig"; sourceTree = "<group>"; };
 		25A961A96F6182A94CC403D4 /* Pods_ArtifyMac.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ArtifyMac.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		2E97AF4A2D16BE24007EF02D /* AppInfo-Pro.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "AppInfo-Pro.xcconfig"; sourceTree = "<group>"; };
+		2E97AF582D16C607007EF02D /* AppStore-Release.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "AppStore-Release.entitlements"; sourceTree = "<group>"; };
+		2E97AF592D16C607007EF02D /* AppStorePro-Release.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "AppStorePro-Release.entitlements"; sourceTree = "<group>"; };
+		2E97AF5E2D16C698007EF02D /* Info-Pro.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Info-Pro.plist"; path = "Runner/Info-Pro.plist"; sourceTree = "<group>"; };
 		331C80D5294CF71000263BE5 /* ArtifyMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArtifyMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		331C80D7294CF71000263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		333000ED22D3DE5D00554162 /* Warnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Warnings.xcconfig; sourceTree = "<group>"; };
@@ -81,12 +87,18 @@
 		33E51914231749380026EE4D /* Release.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = Release.entitlements; sourceTree = "<group>"; };
 		33E5194F232828860026EE4D /* AppInfo.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = AppInfo.xcconfig; sourceTree = "<group>"; };
 		4DEAFAE35CC2775B0C4E3B54 /* Pods-ArtifyMacTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ArtifyMacTests.release.xcconfig"; path = "Target Support Files/Pods-ArtifyMacTests/Pods-ArtifyMacTests.release.xcconfig"; sourceTree = "<group>"; };
+		665F8ED75D201B0256E247E5 /* Pods-ArtifyMac.debug-pro.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ArtifyMac.debug-pro.xcconfig"; path = "Target Support Files/Pods-ArtifyMac/Pods-ArtifyMac.debug-pro.xcconfig"; sourceTree = "<group>"; };
 		6ADFBF2CAC42A9D4CA83513A /* Pods-ArtifyMac.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ArtifyMac.release.xcconfig"; path = "Target Support Files/Pods-ArtifyMac/Pods-ArtifyMac.release.xcconfig"; sourceTree = "<group>"; };
 		754A203046164D3C9FFE22F9 /* Pods-ArtifyMacTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ArtifyMacTests.profile.xcconfig"; path = "Target Support Files/Pods-ArtifyMacTests/Pods-ArtifyMacTests.profile.xcconfig"; sourceTree = "<group>"; };
+		78DCA231CB72647F76BBC119 /* Pods-ArtifyMac.release-pro.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ArtifyMac.release-pro.xcconfig"; path = "Target Support Files/Pods-ArtifyMac/Pods-ArtifyMac.release-pro.xcconfig"; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		9D86BBCF2344987AE1707064 /* Pods-ArtifyMacTests.debug-pro.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ArtifyMacTests.debug-pro.xcconfig"; path = "Target Support Files/Pods-ArtifyMacTests/Pods-ArtifyMacTests.debug-pro.xcconfig"; sourceTree = "<group>"; };
 		AAB594E5BF974FF0FC0630B0 /* Pods_ArtifyMacTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ArtifyMacTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		C5FDDBFAFA2690DED61A50C8 /* Pods-ArtifyMac.profile-pro.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ArtifyMac.profile-pro.xcconfig"; path = "Target Support Files/Pods-ArtifyMac/Pods-ArtifyMac.profile-pro.xcconfig"; sourceTree = "<group>"; };
+		CD837B1C99477CD000BEE7D0 /* Pods-ArtifyMacTests.profile-pro.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ArtifyMacTests.profile-pro.xcconfig"; path = "Target Support Files/Pods-ArtifyMacTests/Pods-ArtifyMacTests.profile-pro.xcconfig"; sourceTree = "<group>"; };
 		CF458540FC61D15A4DA25C65 /* Pods-ArtifyMac.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ArtifyMac.profile.xcconfig"; path = "Target Support Files/Pods-ArtifyMac/Pods-ArtifyMac.profile.xcconfig"; sourceTree = "<group>"; };
+		E33401FD9327806877D48A8B /* Pods-ArtifyMacTests.release-pro.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ArtifyMacTests.release-pro.xcconfig"; path = "Target Support Files/Pods-ArtifyMacTests/Pods-ArtifyMacTests.release-pro.xcconfig"; sourceTree = "<group>"; };
 		E6D0AF0EC7956D45BCF4BC51 /* Pods-ArtifyMacTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ArtifyMacTests.debug.xcconfig"; path = "Target Support Files/Pods-ArtifyMacTests/Pods-ArtifyMacTests.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -119,6 +131,12 @@
 				E6D0AF0EC7956D45BCF4BC51 /* Pods-ArtifyMacTests.debug.xcconfig */,
 				4DEAFAE35CC2775B0C4E3B54 /* Pods-ArtifyMacTests.release.xcconfig */,
 				754A203046164D3C9FFE22F9 /* Pods-ArtifyMacTests.profile.xcconfig */,
+				665F8ED75D201B0256E247E5 /* Pods-ArtifyMac.debug-pro.xcconfig */,
+				78DCA231CB72647F76BBC119 /* Pods-ArtifyMac.release-pro.xcconfig */,
+				C5FDDBFAFA2690DED61A50C8 /* Pods-ArtifyMac.profile-pro.xcconfig */,
+				9D86BBCF2344987AE1707064 /* Pods-ArtifyMacTests.debug-pro.xcconfig */,
+				E33401FD9327806877D48A8B /* Pods-ArtifyMacTests.release-pro.xcconfig */,
+				CD837B1C99477CD000BEE7D0 /* Pods-ArtifyMacTests.profile-pro.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -134,6 +152,7 @@
 		33BA886A226E78AF003329D5 /* Configs */ = {
 			isa = PBXGroup;
 			children = (
+				2E97AF4A2D16BE24007EF02D /* AppInfo-Pro.xcconfig */,
 				33E5194F232828860026EE4D /* AppInfo.xcconfig */,
 				9740EEB21CF90195004384FC /* Debug.xcconfig */,
 				7AFA3C8E1D35360C0083082E /* Release.xcconfig */,
@@ -166,6 +185,7 @@
 		33CC11242044D66E0003C045 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				2E97AF5E2D16C698007EF02D /* Info-Pro.plist */,
 				33CC10F22044A3C60003C045 /* Assets.xcassets */,
 				33CC10F42044A3C60003C045 /* MainMenu.xib */,
 				33CC10F72044A3C60003C045 /* Info.plist */,
@@ -188,6 +208,8 @@
 		33FAB671232836740065AC1E /* Runner */ = {
 			isa = PBXGroup;
 			children = (
+				2E97AF582D16C607007EF02D /* AppStore-Release.entitlements */,
+				2E97AF592D16C607007EF02D /* AppStorePro-Release.entitlements */,
 				33CC10F02044A3C60003C045 /* AppDelegate.swift */,
 				33CC11122044BFA00003C045 /* MainFlutterWindow.swift */,
 				33E51913231747F40026EE4D /* DebugProfile.entitlements */,
@@ -269,7 +291,6 @@
 					33CC10EC2044A3C60003C045 = {
 						CreatedOnToolsVersion = 9.2;
 						LastSwiftMigration = 1100;
-						ProvisioningStyle = Automatic;
 						SystemCapabilities = {
 							com.apple.Sandbox = {
 								enabled = 1;
@@ -315,6 +336,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				33CC10F32044A3C60003C045 /* Assets.xcassets in Resources */,
+				2E97AF4B2D16BE24007EF02D /* AppInfo-Pro.xcconfig in Resources */,
+				2E97AF5F2D16C698007EF02D /* Info-Pro.plist in Resources */,
 				33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -470,6 +493,305 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		2E97AF4C2D16BF09007EF02D /* Debug-Pro */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = "Debug-Pro";
+		};
+		2E97AF4D2D16BF09007EF02D /* Debug-Pro */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2E97AF4A2D16BE24007EF02D /* AppInfo-Pro.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/DebugProfile.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 43V9N6VW8L;
+				INFOPLIST_FILE = "Runner/Info-Pro.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Artify Pro";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = "Debug-Pro";
+		};
+		2E97AF4E2D16BF09007EF02D /* Debug-Pro */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9D86BBCF2344987AE1707064 /* Pods-ArtifyMacTests.debug-pro.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kjxbyz.artify.RunnerTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Artify.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Artify";
+			};
+			name = "Debug-Pro";
+		};
+		2E97AF4F2D16BF09007EF02D /* Debug-Pro */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Manual;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = "Debug-Pro";
+		};
+		2E97AF502D16BF13007EF02D /* Release-Pro */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = "Release-Pro";
+		};
+		2E97AF512D16BF13007EF02D /* Release-Pro */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2E97AF4A2D16BE24007EF02D /* AppInfo-Pro.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Release.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 43V9N6VW8L;
+				INFOPLIST_FILE = "Runner/Info-Pro.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Artify Pro";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_VERSION = 5.0;
+			};
+			name = "Release-Pro";
+		};
+		2E97AF522D16BF13007EF02D /* Release-Pro */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = E33401FD9327806877D48A8B /* Pods-ArtifyMacTests.release-pro.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kjxbyz.artify.RunnerTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Artify.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Artify";
+			};
+			name = "Release-Pro";
+		};
+		2E97AF532D16BF13007EF02D /* Release-Pro */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = "Release-Pro";
+		};
+		2E97AF542D16BF1C007EF02D /* Profile-Pro */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = "Profile-Pro";
+		};
+		2E97AF552D16BF1C007EF02D /* Profile-Pro */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2E97AF4A2D16BE24007EF02D /* AppInfo-Pro.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/DebugProfile.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 43V9N6VW8L;
+				INFOPLIST_FILE = "Runner/Info-Pro.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Artify Pro";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_VERSION = 5.0;
+			};
+			name = "Profile-Pro";
+		};
+		2E97AF562D16BF1C007EF02D /* Profile-Pro */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = CD837B1C99477CD000BEE7D0 /* Pods-ArtifyMacTests.profile-pro.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kjxbyz.artify.RunnerTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Artify.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Artify";
+			};
+			name = "Profile-Pro";
+		};
+		2E97AF572D16BF1C007EF02D /* Profile-Pro */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Manual;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = "Profile-Pro";
+		};
 		331C80DB294CF71000263BE5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E6D0AF0EC7956D45BCF4BC51 /* Pods-ArtifyMacTests.debug.xcconfig */;
@@ -571,14 +893,19 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/DebugProfile.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 43V9N6VW8L;
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Artify;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
 			};
@@ -704,14 +1031,19 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/DebugProfile.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 43V9N6VW8L;
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Artify;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -725,14 +1057,19 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Release.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 43V9N6VW8L;
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Artify;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
 			};
@@ -761,8 +1098,11 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				331C80DB294CF71000263BE5 /* Debug */,
+				2E97AF4E2D16BF09007EF02D /* Debug-Pro */,
 				331C80DC294CF71000263BE5 /* Release */,
+				2E97AF522D16BF13007EF02D /* Release-Pro */,
 				331C80DD294CF71000263BE5 /* Profile */,
+				2E97AF562D16BF1C007EF02D /* Profile-Pro */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -771,8 +1111,11 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				33CC10F92044A3C60003C045 /* Debug */,
+				2E97AF4C2D16BF09007EF02D /* Debug-Pro */,
 				33CC10FA2044A3C60003C045 /* Release */,
+				2E97AF502D16BF13007EF02D /* Release-Pro */,
 				338D0CE9231458BD00FA5F75 /* Profile */,
+				2E97AF542D16BF1C007EF02D /* Profile-Pro */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -781,8 +1124,11 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				33CC10FC2044A3C60003C045 /* Debug */,
+				2E97AF4D2D16BF09007EF02D /* Debug-Pro */,
 				33CC10FD2044A3C60003C045 /* Release */,
+				2E97AF512D16BF13007EF02D /* Release-Pro */,
 				338D0CEA231458BD00FA5F75 /* Profile */,
+				2E97AF552D16BF1C007EF02D /* Profile-Pro */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -791,8 +1137,11 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				33CC111C2044C6BA0003C045 /* Debug */,
+				2E97AF4F2D16BF09007EF02D /* Debug-Pro */,
 				33CC111D2044C6BA0003C045 /* Release */,
+				2E97AF532D16BF13007EF02D /* Release-Pro */,
 				338D0CEB231458BD00FA5F75 /* Profile */,
+				2E97AF572D16BF1C007EF02D /* Profile-Pro */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -1,10 +1,11 @@
 name: artify
 description: "Ideas, Painting & Art."
 publish_to: 'none'
-version: 0.1.0
+version: 0.0.1+1
 
 environment:
-  sdk: ^3.5.0
+  sdk: ^3.6.0
+  flutter: ^3.27.1
 
 dependencies:
   cached_network_image: ^3.3.1
@@ -35,11 +36,33 @@ dev_dependencies:
   build_runner: ^2.4.12
   freezed: ^2.5.7
   json_serializable: ^6.8.0
+  msix: ^3.16.8
 
 flutter:
   uses-material-design: true
   assets:
+    - logo/
     - assets/activities.json
     - assets/destinations.json
     - assets/logo.svg
     - assets/user.jpg
+
+# If you publish your app to the Microsoft Store,
+# the installation package will be signed automatically by the store.
+msix_config:
+  display_name: Artify
+  logo_path: snap\gui\artify.png
+  languages: en-us, zh-cn
+  architecture: x64
+  capabilities: "internetClient,picturesLibrary"
+  install_certificate: false
+
+  # msix_version: 1.0.0.0 # If not set, the value of `version` is used
+  # With Your Own Certificate
+  certificate_path: CERTIFICATE_PATH_PLACEHOLDER
+  certificate_password: CERTIFICATE_PASSWORD_PLACEHOLDER
+
+  # For Publish To Windows Store
+  identity_name: IDENTITY_NAME_PLACEHOLDER
+  publisher: PUBLISHER_PLACEHOLDER
+  publisher_display_name: PUBLISHER_NAME_PLACEHOLDER
