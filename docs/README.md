@@ -57,6 +57,8 @@ make ENV=<dev|stg|prod> <appstore_free|appstore_pro>
 
 ### macOS
 
+>需要包含证书的.p12文件
+
 1. The build target is in `dmg` format and the certificate type is `Developer ID Application`
 
 2. The build target is in `pkg` format and the certificate types are `Developer ID Application` and `Developer ID Installer`
@@ -101,6 +103,9 @@ sudo snap install ./artify_1.0.0_amd64.snap --dangerous
 ```
 
 ### Windows
+
+>Self-signed .pfx certificate information format
+>subject=C=<Country Name (2 letter code)>, ST=<State or Province Name>, L=<Locality Name>, O=<Publisher Name>, OU=<Publisher Name>, CN=<Publisher Name>, emailAddress=<Email Address>
 
 ```powershell
 $PFX_FILE = get-content 'C:\temp\cert.pfx' -Encoding Byte
