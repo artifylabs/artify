@@ -42,21 +42,21 @@
     <launchable type="desktop-id">org.artifylabs.Artify.desktop</launchable>
     <screenshots>
         <screenshot type="default">
-            <image>https://raw.githubusercontent.com/artifylabs/artify/v0.0.1+1/screenshots/desktop.png</image>
+            <image>https://raw.githubusercontent.com/artifylabs/artify/v0.0.1+2/screenshots/desktop.png</image>
             <caption>Default screenshot for desktop</caption>
         </screenshot>
         <screenshot>
-            <image>https://raw.githubusercontent.com/artifylabs/artify/v0.0.1+1/screenshots/desktop-zh.png</image>
+            <image>https://raw.githubusercontent.com/artifylabs/artify/v0.0.1+2/screenshots/desktop-zh.png</image>
             <caption>Support Chinese</caption>
         </screenshot>
         <screenshot>
-            <image>https://raw.githubusercontent.com/artifylabs/artify/v0.0.1+1/screenshots/desktop-dark.png</image>
+            <image>https://raw.githubusercontent.com/artifylabs/artify/v0.0.1+2/screenshots/desktop-dark.png</image>
             <caption>Dark Mode</caption>
         </screenshot>
     </screenshots>
     <releases>
-        <release version="v0.0.1+1" date="2024-12-21">
-            <url type="details">https://github.com/artifylabs/artify/blob/v0.0.1+1/CHANGELOG.md</url>
+        <release version="v0.0.1+2" date="2024-12-21">
+            <url type="details">https://github.com/artifylabs/artify/blob/v0.0.1+2/CHANGELOG.md</url>
         </release>
     </releases>
     <content_rating type="oars-1.1">

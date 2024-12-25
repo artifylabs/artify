@@ -1,5 +1,5 @@
 ﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
-<Package Name="Artify" Manufacturer="Insco LLC" Version="0.0.1.1" UpgradeCode="e4f7ca98-0e52-4d5e-aefd-5f32accd97f9">
+<Package Name="Artify" Manufacturer="Insco LLC" Version="0.0.1.2" UpgradeCode="e4f7ca98-0e52-4d5e-aefd-5f32accd97f9">
     <MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeError)" />
 
     <!-- Set an icon for Windows Settings > Apps -->
