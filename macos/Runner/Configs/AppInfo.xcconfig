@@ -8,7 +8,7 @@
 PRODUCT_NAME = Artify
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.kjxbyz.artify
+PRODUCT_BUNDLE_IDENTIFIER = org.artifylabs.artify
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2024 Artify. All rights reserved.

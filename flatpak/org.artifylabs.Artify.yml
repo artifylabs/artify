@@ -1,4 +1,4 @@
-id: com.kjxbyz.Artify
+id: org.artifylabs.Artify
 
 # https://docs.flatpak.org/en/latest/available-runtimes.html
 runtime: org.freedesktop.Platform
@@ -26,13 +26,13 @@ modules:
       - install -Dm755 usr/share/artify/artify /app/bin/artify
       - cp -r usr/share/artify/data usr/share/artify/lib /app/bin/
 
-      - desktop-file-edit --remove-key=Version --set-key=Terminal --set-value='false' --set-icon='com.kjxbyz.Artify' "usr/share/applications/artify.desktop"
-      - install -Dm644 usr/share/applications/artify.desktop /app/share/applications/com.kjxbyz.Artify.desktop
+      - desktop-file-edit --remove-key=Version --set-key=Terminal --set-value='false' --set-icon='org.artifylabs.Artify' "usr/share/applications/artify.desktop"
+      - install -Dm644 usr/share/applications/artify.desktop /app/share/applications/org.artifylabs.Artify.desktop
 
-      - install -Dm644 usr/share/icons/hicolor/128x128/apps/artify.png /app/share/icons/hicolor/128x128/apps/com.kjxbyz.Artify.png
-      - install -Dm644 usr/share/icons/hicolor/256x256/apps/artify.png /app/share/icons/hicolor/256x256/apps/com.kjxbyz.Artify.png
+      - install -Dm644 usr/share/icons/hicolor/128x128/apps/artify.png /app/share/icons/hicolor/128x128/apps/org.artifylabs.Artify.png
+      - install -Dm644 usr/share/icons/hicolor/256x256/apps/artify.png /app/share/icons/hicolor/256x256/apps/org.artifylabs.Artify.png
 
-      - install -Dm644 usr/share/metainfo/artify.metainfo.xml /app/share/appdata/com.kjxbyz.Artify.metainfo.xml
+      - install -Dm644 usr/share/metainfo/artify.metainfo.xml /app/share/appdata/org.artifylabs.Artify.metainfo.xml
     sources:
       - type: file
         only-arches:

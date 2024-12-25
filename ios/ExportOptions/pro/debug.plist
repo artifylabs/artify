@@ -10,7 +10,7 @@
         <string>manual</string>
         <key>provisioningProfiles</key>
         <dict>
-            <key>com.kjxbyz.artify.pro</key>
+            <key>org.artifylabs.artify.pro</key>
             <string>artify_pro_dev</string>
         </dict>
     </dict>

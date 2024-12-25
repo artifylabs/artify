@@ -12,7 +12,7 @@
         <string>iPhone Distribution: Qingdao INSCO Network Technology Co., Ltd. (43V9N6VW8L)</string>
         <key>provisioningProfiles</key>
         <dict>
-            <key>com.kjxbyz.artify</key>
+            <key>org.artifylabs.artify</key>
             <string>artify_appstore</string>
         </dict>
     </dict>

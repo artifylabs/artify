@@ -1,4 +1,4 @@
-package com.kjxbyz.artify
+package org.artifylabs.artify
 
 import io.flutter.embedding.android.FlutterActivity
 

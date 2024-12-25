@@ -6,7 +6,7 @@
     https://www.freedesktop.org/software/appstream/docs/chap-Quickstart.html#sect-Quickstart-DesktopApps
 -->
 <component type="desktop-application">
-    <id>com.kjxbyz.Artify</id>
+    <id>org.artifylabs.Artify</id>
     <provides>
         <id>artify</id>
     </provides>
@@ -39,7 +39,7 @@
         <p>Introducing Artify - Ideas, Painting &amp; Art.</p>
         <p xml:lang="zh">介绍Artify - 理念、绘画与艺术。</p>
     </description>
-    <launchable type="desktop-id">com.kjxbyz.Artify.desktop</launchable>
+    <launchable type="desktop-id">org.artifylabs.Artify.desktop</launchable>
     <screenshots>
         <screenshot type="default">
             <image>https://raw.githubusercontent.com/artifylabs/artify/v0.0.1+1/screenshots/desktop.png</image>
