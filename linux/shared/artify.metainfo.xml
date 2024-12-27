@@ -12,7 +12,7 @@
     </provides>
     <name>Artify</name>
     <summary>Ideas, Painting &amp; Art</summary>
-    <summary xml:lang="zh">理念、绘画与艺术</summary>
+    <summary xml:lang="zh">创意、绘画与艺术</summary>
     <developer id="com.kjxbyz">
         <name>Insco LLC</name>
     </developer>
@@ -37,7 +37,7 @@
     </recommends>
     <description>
         <p>Introducing Artify - Ideas, Painting &amp; Art.</p>
-        <p xml:lang="zh">介绍Artify - 理念、绘画与艺术。</p>
+        <p xml:lang="zh">介绍Artify - 创意、绘画与艺术。</p>
     </description>
     <launchable type="desktop-id">org.artifylabs.Artify.desktop</launchable>
     <screenshots>
